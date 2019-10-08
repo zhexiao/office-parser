@@ -129,9 +129,14 @@ func (q *Question) parseMeta(w *Word) {
 				log.Fatalf("常考题 解析失败 %s", err)
 			}
 
-			autoGrade, err := strconv.Atoi(row.Content[4])
-			if err != nil {
-				log.Fatalf("自动批改 解析失败 %s", err)
+			var autoGrade int
+			if len(row.Content) >= 4 {
+				autoGrade, err = strconv.Atoi(row.Content[4])
+				if err != nil {
+					log.Fatalf("自动批改 解析失败 %s", err)
+				}
+			} else {
+				autoGrade = 0
 			}
 
 			q.OftenTest = oftenTest

@@ -10,7 +10,8 @@ import (
 func main() {
 	//解析word
 	w := word.Word{}
-	w.Parser("./test/question-fill.docx")
+	//w.Parser("./test/question-fill.docx")
+	w.Parser("./test/question-choice-201903011.docx")
 
 	//解析试题数据
 	q := word.Question{}
