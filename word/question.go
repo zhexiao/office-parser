@@ -3,9 +3,41 @@ package word
 import (
 	"fmt"
 	"log"
+	"office-parser/utils"
 	"strconv"
 	"strings"
 )
+
+type QuestionCognitionMap struct {
+	cognitionMapNum string
+}
+
+type QuestionOutline struct {
+	outlineNum string
+}
+
+type QuestionCognitionSp struct {
+	cognitionSpNum string
+}
+
+type QuestionResolve struct {
+	resolve        string
+	mimeType       int
+	mimeUri        string
+	defaultResolve int
+}
+
+type QuestionAnswer struct {
+	answer           string
+	autoCorrect      int
+	cognitionMapNums string
+	cognitionSpNums  string
+	assessment       string
+}
+
+type QuestionHint struct {
+	hint string
+}
 
 type Question struct {
 	basicType       string
@@ -18,12 +50,19 @@ type Question struct {
 	oftenTest       int
 	autoGrade       int
 	note            string
-	estimated_time  int
+	estimatedTime   int
 	diff            float64
 	identify        float64
 	guess           float64
-	model_type      string
+	modelType       string
 	stem            string
+	image           string
+	qCognitionMap   []QuestionCognitionMap
+	qCognitionSp    []QuestionCognitionSp
+	qOutline        []QuestionOutline
+	qHint           []QuestionHint
+	qResolve        []QuestionResolve
+	qAnswer         []QuestionAnswer
 }
 
 //解析word数据到试题结构
@@ -35,23 +74,28 @@ func (q *Question) Parser(w *Word) {
 	q.parseTable(w)
 
 	//打印数据
-	fmt.Printf("%#v", q)
+	fmt.Printf("%#v \n", q)
 }
 
 func (q *Question) parseTable(w *Word) {
-	//读取试题数据
+	q.parseMeta(w)
+	q.parseAddon(w)
+}
+
+//试题基础属性
+func (q *Question) parseMeta(w *Word) {
 	for _, row := range w.Content {
-		firstText := strings.Trim(row.Content[0], " ")
+		title := strings.Trim(row.Content[0], " ")
 
 		switch {
-		case strings.Contains(firstText, "应用类型"):
+		case strings.Contains(title, "应用类型"):
 			resUsage, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("应用类型 解析失败 %s", err)
 			}
 
 			q.resUsage = resUsage
-		case strings.Contains(firstText, "题库年度"):
+		case strings.Contains(title, "题库年度"):
 			year, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("题库年度 解析失败 %s", err)
@@ -59,28 +103,28 @@ func (q *Question) parseTable(w *Word) {
 
 			q.year = year
 			q.author = row.Content[3]
-		case strings.Contains(firstText, "试题描述类型"):
+		case strings.Contains(title, "试题描述类型"):
 			labelString, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("试题描述类型 解析失败 %s", err)
 			}
 
 			q.labelString = labelString
-		case strings.Contains(firstText, "试用年级"):
+		case strings.Contains(title, "试用年级"):
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("试用年级 解析失败 %s", err)
 			}
 
 			q.grade = grade
-		case strings.Contains(firstText, "学科题型"):
+		case strings.Contains(title, "学科题型"):
 			questionAppType, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("学科题型 解析失败 %s", err)
 			}
 
 			q.questionAppType = questionAppType
-		case strings.Contains(firstText, "常考题"):
+		case strings.Contains(title, "常考题"):
 			oftenTest, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("常考题 解析失败 %s", err)
@@ -93,10 +137,10 @@ func (q *Question) parseTable(w *Word) {
 
 			q.oftenTest = oftenTest
 			q.autoGrade = autoGrade
-		case strings.Contains(firstText, "试题备注"):
+		case strings.Contains(title, "试题备注"):
 			q.note = row.Content[1]
-		case strings.Contains(firstText, "解题时间"):
-			estimated_time, err := strconv.Atoi(row.Content[1])
+		case strings.Contains(title, "解题时间"):
+			estimatedTime, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("解题时间 解析失败 %s", err)
 			}
@@ -128,12 +172,146 @@ func (q *Question) parseTable(w *Word) {
 				q.guess = guess
 			}
 
-			q.estimated_time = estimated_time
+			q.estimatedTime = estimatedTime
 			q.diff = diff
-		case strings.Contains(firstText, "版型"):
-			q.model_type = row.Content[1]
-		case strings.Contains(firstText, "题目文字"):
+		case strings.Contains(title, "版型"):
+			q.modelType = row.Content[1]
+		case strings.Contains(title, "题目文字"):
 			q.stem = row.Content[1]
+		case strings.Contains(title, "题目图片"):
+			q.image = "需要通过上传到七牛保存图片地址"
 		}
 	}
+}
+
+//试题附加属性
+func (q *Question) parseAddon(w *Word) {
+	var answerTable bool
+	var hintTable bool
+
+	for _, row := range w.Content {
+		title := strings.Trim(row.Content[0], " ")
+
+		switch {
+		case strings.Contains(title, "知识地图"):
+			content := row.Content[1]
+			q.parseCognitionMap(content)
+		case strings.Contains(title, "教材目录"):
+			content := row.Content[1]
+			q.parseOutline(content)
+		case strings.Contains(title, "特异性知识点"):
+			content := row.Content[1]
+			q.parseCognitionSp(content)
+		case strings.Contains(title, "详解"):
+			content := row.Content[1]
+			q.parseResolve(content)
+		case strings.Contains(title, "#ANSWER"):
+			answerTable = true
+			continue
+		case strings.Contains(title, "#HINT"):
+			answerTable = false
+			hintTable = true
+			continue
+		}
+
+		if answerTable {
+			content := row.Content[0]
+			cognitionMapContent := row.Content[1]
+			cognitionSpContent := row.Content[2]
+
+			if strings.Contains(content, "答案内容") {
+				continue
+			}
+
+			q.parseAnswer(content, cognitionMapContent, cognitionSpContent)
+		}
+
+		if hintTable {
+			content := row.Content[1]
+			q.parseHint(content)
+		}
+	}
+}
+
+//试题普适性知识点
+func (q *Question) parseCognitionMap(content string) {
+	numList := utils.ReadNum(content)
+
+	for _, num := range numList {
+		numObj := QuestionCognitionMap{
+			cognitionMapNum: num,
+		}
+
+		q.qCognitionMap = append(q.qCognitionMap, numObj)
+	}
+}
+
+//试题目录
+func (q *Question) parseOutline(content string) {
+	numList := utils.ReadNum(content)
+
+	for _, num := range numList {
+		numObj := QuestionOutline{
+			outlineNum: num,
+		}
+
+		q.qOutline = append(q.qOutline, numObj)
+	}
+}
+
+//试题特异性知识点
+func (q *Question) parseCognitionSp(content string) {
+	numList := utils.ReadNum(content)
+
+	for _, num := range numList {
+		numObj := QuestionCognitionSp{
+			cognitionSpNum: num,
+		}
+
+		q.qCognitionSp = append(q.qCognitionSp, numObj)
+	}
+}
+
+//试题解析
+func (q *Question) parseResolve(content string) {
+	//todo 带图片的文本需要处理
+	resolveObj := QuestionResolve{
+		resolve:        content,
+		mimeType:       0,
+		mimeUri:        "",
+		defaultResolve: 1,
+	}
+
+	q.qResolve = append(q.qResolve, resolveObj)
+}
+
+//试题答案
+func (q *Question) parseAnswer(content string, maps string, sps string) {
+	//数组转字符串
+	mapNumList := utils.ReadNum(maps)
+	spNumlist := utils.ReadNum(sps)
+
+	mapNums := strings.Join(mapNumList, ",")
+	spNums := strings.Join(spNumlist, ",")
+
+	//todo 带图片的文本需要处理
+	answerObj := QuestionAnswer{
+		answer:           content,
+		autoCorrect:      0,
+		cognitionMapNums: mapNums,
+		cognitionSpNums:  spNums,
+		assessment:       "",
+	}
+
+	q.qAnswer = append(q.qAnswer, answerObj)
+}
+
+//试题提示
+func (q *Question) parseHint(content string) {
+	//todo 带图片的文本需要处理
+	hintObj := QuestionHint{
+		hint: content,
+	}
+
+	q.qHint = append(q.qHint, hintObj)
 }
