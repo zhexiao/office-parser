@@ -2,6 +2,7 @@ package word
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/unidoc/unioffice/document"
 	"log"
 )
@@ -21,6 +22,9 @@ func (w *Word) Parser(filepath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//todo 得到文档的所有图片一次性上传到七牛
+	//fmt.Println(doc.Images)
 
 	w.getTableData(doc)
 }
@@ -60,7 +64,16 @@ func (w *Word) getCellText(cell document.Cell) string {
 		runs := p.Runs()
 
 		for _, r := range runs {
-			text := r.Text()
+			var text string
+			if r.DrawingInline() != nil {
+				for _, di := range r.DrawingInline() {
+					imf, _ := di.GetImage()
+					fmt.Println(imf.RelID())
+				}
+			} else {
+				text = r.Text()
+			}
+
 			resText.WriteString(text)
 		}
 	}
