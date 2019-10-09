@@ -34,6 +34,14 @@ type QuestionAnswer struct {
 	Assessment       string `json:"assessment"`
 }
 
+type QuestionChoice struct {
+	Content          string `json:"content"`
+	Correct          bool   `json:"correct"`
+	CognitionMapNums string `json:"cognition_map_nums"`
+	CognitionSpNums  string `json:"cognition_sp_nums"`
+	Assessment       string `json:"assessment"`
+}
+
 type QuestionHint struct {
 	Hint string `json:"hint"`
 }
@@ -62,6 +70,7 @@ type Question struct {
 	QHint           []QuestionHint         `json:"q_hint"`
 	QResolve        []QuestionResolve      `json:"q_resolve"`
 	QAnswer         []QuestionAnswer       `json:"q_answer"`
+	QChoice         []QuestionChoice       `json:"q_choice"`
 }
 
 //解析word数据到试题结构
@@ -70,6 +79,7 @@ func (q *Question) Parser(w *Word) {
 	firstRow := w.Content[0]
 	q.BasicType = strings.Trim(firstRow.Content[0], " ")
 
+	//解析表单
 	q.parseTable(w)
 
 	//打印结构体数据
@@ -77,7 +87,10 @@ func (q *Question) Parser(w *Word) {
 }
 
 func (q *Question) parseTable(w *Word) {
+	//解析基础数据
 	q.parseMeta(w)
+
+	//解析附加属性
 	q.parseAddon(w)
 }
 
@@ -129,6 +142,7 @@ func (q *Question) parseMeta(w *Word) {
 				log.Fatalf("常考题 解析失败 %s", err)
 			}
 
+			//选择题没有自动批改，填空等题型才有
 			var autoGrade int
 			if len(row.Content) >= 4 {
 				autoGrade, err = strconv.Atoi(row.Content[4])
@@ -198,17 +212,13 @@ func (q *Question) parseAddon(w *Word) {
 
 		switch {
 		case strings.Contains(title, "知识地图"):
-			content := row.Content[1]
-			q.parseCognitionMap(content)
+			q.parseCognitionMap(row)
 		case strings.Contains(title, "教材目录"):
-			content := row.Content[1]
-			q.parseOutline(content)
+			q.parseOutline(row)
 		case strings.Contains(title, "特异性知识点"):
-			content := row.Content[1]
-			q.parseCognitionSp(content)
+			q.parseCognitionSp(row)
 		case strings.Contains(title, "详解"):
-			content := row.Content[1]
-			q.parseResolve(content)
+			q.parseResolve(row)
 		case strings.Contains(title, "#ANSWER"):
 			answerTable = true
 			continue
@@ -221,26 +231,25 @@ func (q *Question) parseAddon(w *Word) {
 		//读取答案数据
 		if answerTable {
 			content := row.Content[0]
-			cognitionMapContent := row.Content[1]
-			cognitionSpContent := row.Content[2]
 
+			//非选择题的标题
 			if strings.Contains(content, "答案内容") {
 				continue
 			}
 
-			q.parseAnswer(content, cognitionMapContent, cognitionSpContent)
+			q.parseAnswer(row)
 		}
 
 		//读取提示数据
 		if hintTable {
-			content := row.Content[1]
-			q.parseHint(content)
+			q.parseHint(row)
 		}
 	}
 }
 
 //试题普适性知识点
-func (q *Question) parseCognitionMap(content string) {
+func (q *Question) parseCognitionMap(row *RowData) {
+	content := row.Content[1]
 	numList := utils.ReadNum(content)
 
 	for _, num := range numList {
@@ -253,7 +262,8 @@ func (q *Question) parseCognitionMap(content string) {
 }
 
 //试题目录
-func (q *Question) parseOutline(content string) {
+func (q *Question) parseOutline(row *RowData) {
+	content := row.Content[1]
 	numList := utils.ReadNum(content)
 
 	for _, num := range numList {
@@ -266,7 +276,8 @@ func (q *Question) parseOutline(content string) {
 }
 
 //试题特异性知识点
-func (q *Question) parseCognitionSp(content string) {
+func (q *Question) parseCognitionSp(row *RowData) {
+	content := row.Content[1]
 	numList := utils.ReadNum(content)
 
 	for _, num := range numList {
@@ -279,7 +290,12 @@ func (q *Question) parseCognitionSp(content string) {
 }
 
 //试题解析
-func (q *Question) parseResolve(content string) {
+func (q *Question) parseResolve(row *RowData) {
+	content := row.Content[1]
+	if content == "" {
+		return
+	}
+
 	//todo 带图片的文本需要处理
 	resolveObj := QuestionResolve{
 		Resolve:        content,
@@ -291,29 +307,77 @@ func (q *Question) parseResolve(content string) {
 	q.QResolve = append(q.QResolve, resolveObj)
 }
 
-//试题答案
-func (q *Question) parseAnswer(content string, maps string, sps string) {
-	//数组转字符串
-	mapNumList := utils.ReadNum(maps)
-	spNumlist := utils.ReadNum(sps)
+//试题答案(答案的数据读取需要区分不同的题型)
+func (q *Question) parseAnswer(row *RowData) {
+	//选择题的属性
+	var isChoice = false
+	var correct bool
 
-	mapNums := strings.Join(mapNumList, ",")
-	spNums := strings.Join(spNumlist, ",")
+	var content string
+	var maps string
+	var sps string
 
-	//todo 带图片的文本需要处理
-	answerObj := QuestionAnswer{
-		Answer:           content,
-		AutoCorrect:      0,
-		CognitionMapNums: mapNums,
-		CognitionSpNums:  spNums,
-		Assessment:       "",
+	switch q.BasicType {
+	case "填空":
+		content = row.Content[0]
+		maps = row.Content[1]
+		sps = row.Content[2]
+	case "解答":
+		content = row.Content[1]
+	case "判断题":
+		content = row.Content[1]
+	case "选择题":
+		isChoice = true
+		correctText := row.Content[0]
+
+		//选择题的标题
+		if strings.Contains(correctText, "是否正确") {
+			return
+		}
+
+		if strings.EqualFold(correctText, "v") {
+			correct = true
+		} else {
+			correct = false
+		}
+
+		content = row.Content[1]
+		maps = row.Content[2]
+		sps = row.Content[3]
 	}
 
-	q.QAnswer = append(q.QAnswer, answerObj)
+	var mapNums = strings.Join(utils.ReadNum(maps), ",")
+	var spNums = strings.Join(utils.ReadNum(sps), ",")
+
+	if isChoice {
+		//todo 带图片的文本需要处理
+		choiceObj := QuestionChoice{
+			Content:          content,
+			Correct:          correct,
+			CognitionMapNums: mapNums,
+			CognitionSpNums:  spNums,
+			Assessment:       "",
+		}
+
+		q.QChoice = append(q.QChoice, choiceObj)
+	} else {
+		//todo 带图片的文本需要处理
+		answerObj := QuestionAnswer{
+			Answer:           content,
+			AutoCorrect:      0,
+			CognitionMapNums: mapNums,
+			CognitionSpNums:  spNums,
+			Assessment:       "",
+		}
+
+		q.QAnswer = append(q.QAnswer, answerObj)
+	}
+
 }
 
 //试题提示
-func (q *Question) parseHint(content string) {
+func (q *Question) parseHint(row *RowData) {
+	content := row.Content[1]
 	if content == "" {
 		return
 	}
