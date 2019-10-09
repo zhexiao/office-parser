@@ -14,6 +14,7 @@ type RowData struct {
 type Word struct {
 	Uri     string
 	Content []*RowData
+	doc     *document.Document
 }
 
 //解析word
@@ -23,40 +24,48 @@ func (w *Word) Parser(filepath string) {
 		log.Fatal(err)
 	}
 
-	//todo 得到文档的所有图片一次性上传到七牛
-	//fmt.Println(doc.Images)
+	//得到doc指针数据
+	w.doc = doc
 
-	w.getTableData(doc)
+	//todo 得到文档的所有图片一次性上传到七牛
+	//fmt.Println(w.doc.Images)
+
+	//读取table数据
+	w.getTableData()
 }
 
 //读取表单数据
-func (w *Word) getTableData(doc *document.Document) {
-	tables := doc.Tables()
+func (w *Word) getTableData() {
+	tables := w.doc.Tables()
 	for _, table := range tables {
 		rows := table.Rows()
+		w.getRowsData(&rows)
+	}
+}
 
-		for _, row := range rows {
-			rowData := w.getRowText(row)
-			w.Content = append(w.Content, &rowData)
-		}
+//读取所有行的数据
+func (w *Word) getRowsData(rows *[]document.Row) {
+	for _, row := range *rows {
+		rowData := w.getRowText(&row)
+		w.Content = append(w.Content, &rowData)
 	}
 }
 
 //读取每一行的数据
-func (w *Word) getRowText(row document.Row) RowData {
+func (w *Word) getRowText(row *document.Row) RowData {
 	cells := row.Cells()
 	rowData := RowData{}
 
 	for _, cell := range cells {
-		text := w.getCellText(cell)
-		rowData.Content = append(rowData.Content, text)
+		cellText := w.getCellText(&cell)
+		rowData.Content = append(rowData.Content, cellText)
 	}
 
 	return rowData
 }
 
-//读取每一个单元的数据
-func (w *Word) getCellText(cell document.Cell) string {
+//读取行里面每一个单元的数据
+func (w *Word) getCellText(cell *document.Cell) string {
 	paras := cell.Paragraphs()
 
 	resText := bytes.Buffer{}
@@ -65,12 +74,15 @@ func (w *Word) getCellText(cell document.Cell) string {
 
 		for _, r := range runs {
 			var text string
+
+			//图片数据
 			if r.DrawingInline() != nil {
 				for _, di := range r.DrawingInline() {
 					imf, _ := di.GetImage()
-					fmt.Println(imf.RelID())
+					fmt.Println(imf.Path())
 				}
 			} else {
+				//文本数据
 				text = r.Text()
 			}
 
