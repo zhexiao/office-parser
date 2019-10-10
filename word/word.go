@@ -81,6 +81,10 @@ func (w *Word) getCellText(cell *document.Cell) string {
 					imf, _ := di.GetImage()
 					fmt.Println(imf.Path())
 				}
+			} else if r.OleObjects() != nil {
+				for _, ole := range r.OleObjects() {
+					fmt.Printf("%#v", *ole.OleObject().IdAttr)
+				}
 			} else {
 				//文本数据
 				text = r.Text()
