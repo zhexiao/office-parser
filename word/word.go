@@ -83,7 +83,7 @@ func (w *Word) getCellText(cell *document.Cell) string {
 				}
 			} else if r.OleObjects() != nil {
 				for _, ole := range r.OleObjects() {
-					fmt.Printf("%#v", *ole.OleObject().IdAttr)
+					fmt.Println(ole.OleRid(), ole.ImagedataRid())
 				}
 			} else {
 				//文本数据
