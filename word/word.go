@@ -3,8 +3,11 @@ package word
 import (
 	"bytes"
 	"fmt"
+	"github.com/unidoc/unioffice/common"
 	"github.com/unidoc/unioffice/document"
 	"log"
+	"mtef-go/eqn"
+	"office-parser/utils"
 )
 
 type RowData struct {
@@ -26,9 +29,11 @@ func (w *Word) Parser(filepath string) {
 
 	//得到doc指针数据
 	w.doc = doc
+	w.parseOle(w.doc.OleObjectPaths)
+	w.parseImage(w.doc.Images)
 
-	//todo 得到文档的所有图片一次性上传到七牛
-	//fmt.Println(w.doc.Images)
+	//todo 得到文档的所有公式一次性解析
+	//fmt.Println(w.doc.OleObjectWmfPath)
 
 	//读取table数据
 	w.getTableData()
@@ -79,11 +84,11 @@ func (w *Word) getCellText(cell *document.Cell) string {
 			if r.DrawingInline() != nil {
 				for _, di := range r.DrawingInline() {
 					imf, _ := di.GetImage()
-					fmt.Println(imf.Path())
+					fmt.Println(imf)
 				}
 			} else if r.OleObjects() != nil {
 				for _, ole := range r.OleObjects() {
-					fmt.Println(ole.OleRid(), ole.ImagedataRid())
+					fmt.Println(ole)
 				}
 			} else {
 				//文本数据
@@ -95,4 +100,23 @@ func (w *Word) getCellText(cell *document.Cell) string {
 	}
 
 	return resText.String()
+}
+
+//把ole对象文件转为latex字符串
+func (w *Word) parseOle(olePaths []document.OleObjectPath) {
+	for _, ole := range olePaths {
+		latex := eqn.Convert(ole.Path())
+		fmt.Println(latex)
+	}
+}
+
+//把图片上传到七牛
+func (w *Word) parseImage(images []common.ImageRef) {
+	for _, img := range images {
+		localFile := img.Path()
+		key := fmt.Sprintf("%s.%s", "github-22", img.Format())
+
+		uri := utils.UploadFileToQiniu(key, localFile)
+		fmt.Println(uri)
+	}
 }

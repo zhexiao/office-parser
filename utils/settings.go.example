@@ -1,0 +1,22 @@
+package utils
+
+type qiniuCfg struct {
+	accessKey string
+	secretKey string
+	bucket    string
+	zone      string
+
+	domain string
+}
+
+func QiniuCfg() qiniuCfg {
+	cfg := qiniuCfg{
+		accessKey: "aaaaa",
+		secretKey: "bbbbbb",
+		bucket:    "tccnu-ups",
+		zone:      "ZoneHuanan",
+		domain:    "https://cccc.com",
+	}
+
+	return cfg
+}
