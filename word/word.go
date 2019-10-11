@@ -8,6 +8,8 @@ import (
 	"log"
 	"mtef-go/eqn"
 	"office-parser/utils"
+	"strconv"
+	"time"
 )
 
 type RowData struct {
@@ -18,6 +20,11 @@ type Word struct {
 	Uri     string
 	Content []*RowData
 	doc     *document.Document
+
+	//公式对象 RID:LATEX 的对应关系
+	oles map[string]*string
+	//图片 RID:七牛地址 的对应关系
+	images map[string]string
 }
 
 //解析word
@@ -84,11 +91,13 @@ func (w *Word) getCellText(cell *document.Cell) string {
 			if r.DrawingInline() != nil {
 				for _, di := range r.DrawingInline() {
 					imf, _ := di.GetImage()
-					fmt.Println(imf)
+					uri := w.images[imf.RelID()]
+					fmt.Println(uri)
 				}
 			} else if r.OleObjects() != nil {
 				for _, ole := range r.OleObjects() {
-					fmt.Println(ole)
+					latex := w.oles[ole.OleRid()]
+					fmt.Println(*latex)
 				}
 			} else {
 				//文本数据
@@ -104,19 +113,25 @@ func (w *Word) getCellText(cell *document.Cell) string {
 
 //把ole对象文件转为latex字符串
 func (w *Word) parseOle(olePaths []document.OleObjectPath) {
+	w.oles = make(map[string]*string)
+
 	for _, ole := range olePaths {
+		//调用解析库解析公式
 		latex := eqn.Convert(ole.Path())
-		fmt.Println(latex)
+		w.oles[ole.Rid()] = &latex
 	}
 }
 
 //把图片上传到七牛
 func (w *Word) parseImage(images []common.ImageRef) {
+	w.images = make(map[string]string)
+
 	for _, img := range images {
 		localFile := img.Path()
-		key := fmt.Sprintf("%s.%s", "github-22", img.Format())
+		key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), img.Format())
 
+		//上传到七牛
 		uri := utils.UploadFileToQiniu(key, localFile)
-		fmt.Println(uri)
+		w.images[img.RelID()] = uri
 	}
 }
