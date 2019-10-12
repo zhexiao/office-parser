@@ -8,13 +8,9 @@ import (
 )
 
 func main() {
-	//解析word
-	w := word.Word{}
-	w.Parser("./test/question-fill.docx")
-
-	//解析试题数据
-	q := word.Question{}
-	q.Parser(&w)
+	//解析数据
+	//q := word.Convert("./test/question-tzt-201903011.docx")
+	q := word.Convert("./test/question-fill.docx")
 
 	//转为json数据
 	jsonBytes, err := json.Marshal(q)

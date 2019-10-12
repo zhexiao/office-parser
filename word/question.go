@@ -47,56 +47,83 @@ type QuestionHint struct {
 }
 
 type Question struct {
-	BasicType       string                 `json:"basic_type"`
-	ResUsage        int                    `json:"res_usage"`
-	Year            int                    `json:"year"`
-	Author          string                 `json:"author"`
-	LabelString     int                    `json:"label_string"`
-	Grade           int                    `json:"grade"`
-	QuestionAppType int                    `json:"question_app_type"`
-	OftenTest       int                    `json:"often_test"`
-	AutoGrade       int                    `json:"auto_grade"`
-	Note            string                 `json:"note"`
-	EstimatedTime   int                    `json:"estimated_time"`
-	Diff            float64                `json:"diff"`
-	Identify        float64                `json:"identify"`
-	Guess           float64                `json:"guess"`
-	ModelType       string                 `json:"model_type"`
-	Stem            string                 `json:"stem"`
-	Image           string                 `json:"image"`
-	QCognitionMap   []QuestionCognitionMap `json:"q_cognition_map"`
-	QCognitionSp    []QuestionCognitionSp  `json:"q_cognition_sp"`
-	QOutline        []QuestionOutline      `json:"q_outline"`
-	QHint           []QuestionHint         `json:"q_hint"`
-	QResolve        []QuestionResolve      `json:"q_resolve"`
-	QAnswer         []QuestionAnswer       `json:"q_answer"`
-	QChoice         []QuestionChoice       `json:"q_choice"`
+	BasicType       string                  `json:"basic_type"`
+	ResUsage        int                     `json:"res_usage"`
+	Year            int                     `json:"year"`
+	Author          string                  `json:"author"`
+	LabelString     int                     `json:"label_string"`
+	Grade           int                     `json:"grade"`
+	QuestionAppType int                     `json:"question_app_type"`
+	OftenTest       int                     `json:"often_test"`
+	AutoGrade       int                     `json:"auto_grade"`
+	Note            string                  `json:"note"`
+	EstimatedTime   int                     `json:"estimated_time"`
+	Diff            float64                 `json:"diff"`
+	Identify        float64                 `json:"identify"`
+	Guess           float64                 `json:"guess"`
+	ModelType       string                  `json:"model_type"`
+	Stem            string                  `json:"stem"`
+	Image           string                  `json:"image"`
+	QCognitionMap   []*QuestionCognitionMap `json:"q_cognition_map"`
+	QCognitionSp    []*QuestionCognitionSp  `json:"q_cognition_sp"`
+	QOutline        []*QuestionOutline      `json:"q_outline"`
+	QHint           []*QuestionHint         `json:"q_hint"`
+	QResolve        []*QuestionResolve      `json:"q_resolve"`
+	QAnswer         []*QuestionAnswer       `json:"q_answer"`
+	QChoice         []*QuestionChoice       `json:"q_choice"`
+	QRelation       []*Question             `json:"q_relation"`
 }
 
-//解析word数据到试题结构
-func (q *Question) Parser(w *Word) {
-	//读取基本类型
-	firstRow := w.Content[0]
-	q.BasicType = strings.Trim(firstRow.Content[0], " ")
+//把word里面的试题数据解析出来
+func ParseQuestion(w *Word) *Question {
+	var q Question
+	for idx, table := range w.Tables {
+		//读取基本类型
+		firstRow := table.Rows[0]
+		basicType := strings.Trim(firstRow.Content[0], " ")
 
-	//解析表单
-	q.parseTable(w)
+		//第一道题
+		if idx == 0 {
+			q.BasicType = basicType
+			//解析表单
+			q.parseTable(table)
+			//	后面的子题
+		} else {
+			if q.BasicType == "题组题" {
+				var childQuestion Question
+				childQuestion.BasicType = basicType
 
-	//打印结构体数据
-	//fmt.Printf("%#v \n", q)
+				//解析表单
+				childQuestion.parseTable(table)
+
+				//一些基本属性继承于母题
+				childQuestion.ResUsage = q.ResUsage
+				childQuestion.Year = q.Year
+				childQuestion.Author = q.Author
+				childQuestion.LabelString = q.LabelString
+				childQuestion.Grade = q.Grade
+				childQuestion.OftenTest = q.OftenTest
+
+				//子题插入到母题
+				q.QRelation = append(q.QRelation, &childQuestion)
+			}
+		}
+	}
+
+	return &q
 }
 
-func (q *Question) parseTable(w *Word) {
+func (q *Question) parseTable(t *TableData) {
 	//解析基础数据
-	q.parseMeta(w)
+	q.parseMeta(t)
 
 	//解析附加属性
-	q.parseAddon(w)
+	q.parseAddon(t)
 }
 
 //试题基础属性
-func (q *Question) parseMeta(w *Word) {
-	for _, row := range w.Content {
+func (q *Question) parseMeta(t *TableData) {
+	for _, row := range t.Rows {
 		title := strings.Trim(row.Content[0], " ")
 
 		switch {
@@ -122,7 +149,7 @@ func (q *Question) parseMeta(w *Word) {
 			}
 
 			q.LabelString = labelString
-		case strings.Contains(title, "试用年级"):
+		case strings.Contains(title, "适用年级"):
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Fatalf("试用年级 解析失败 %s", err)
@@ -203,11 +230,11 @@ func (q *Question) parseMeta(w *Word) {
 }
 
 //试题附加属性
-func (q *Question) parseAddon(w *Word) {
+func (q *Question) parseAddon(t *TableData) {
 	var answerTable bool
 	var hintTable bool
 
-	for _, row := range w.Content {
+	for _, row := range t.Rows {
 		title := strings.Trim(row.Content[0], " ")
 
 		switch {
@@ -257,7 +284,7 @@ func (q *Question) parseCognitionMap(row *RowData) {
 			CognitionMapNum: num,
 		}
 
-		q.QCognitionMap = append(q.QCognitionMap, numObj)
+		q.QCognitionMap = append(q.QCognitionMap, &numObj)
 	}
 }
 
@@ -271,7 +298,7 @@ func (q *Question) parseOutline(row *RowData) {
 			OutlineNum: num,
 		}
 
-		q.QOutline = append(q.QOutline, numObj)
+		q.QOutline = append(q.QOutline, &numObj)
 	}
 }
 
@@ -285,7 +312,7 @@ func (q *Question) parseCognitionSp(row *RowData) {
 			CognitionSpNum: num,
 		}
 
-		q.QCognitionSp = append(q.QCognitionSp, numObj)
+		q.QCognitionSp = append(q.QCognitionSp, &numObj)
 	}
 }
 
@@ -304,7 +331,7 @@ func (q *Question) parseResolve(row *RowData) {
 		DefaultResolve: 1,
 	}
 
-	q.QResolve = append(q.QResolve, resolveObj)
+	q.QResolve = append(q.QResolve, &resolveObj)
 }
 
 //试题答案(答案的数据读取需要区分不同的题型)
@@ -359,7 +386,7 @@ func (q *Question) parseAnswer(row *RowData) {
 			Assessment:       "",
 		}
 
-		q.QChoice = append(q.QChoice, choiceObj)
+		q.QChoice = append(q.QChoice, &choiceObj)
 	} else {
 		//todo 带图片的文本需要处理
 		answerObj := QuestionAnswer{
@@ -370,7 +397,7 @@ func (q *Question) parseAnswer(row *RowData) {
 			Assessment:       "",
 		}
 
-		q.QAnswer = append(q.QAnswer, answerObj)
+		q.QAnswer = append(q.QAnswer, &answerObj)
 	}
 
 }
@@ -387,5 +414,5 @@ func (q *Question) parseHint(row *RowData) {
 		Hint: content,
 	}
 
-	q.QHint = append(q.QHint, hintObj)
+	q.QHint = append(q.QHint, &hintObj)
 }

@@ -16,10 +16,14 @@ type RowData struct {
 	Content []string
 }
 
+type TableData struct {
+	Rows []*RowData
+}
+
 type Word struct {
-	Uri     string
-	Content []*RowData
-	doc     *document.Document
+	Uri    string
+	Tables []*TableData
+	doc    *document.Document
 
 	//公式对象 RID:LATEX 的对应关系
 	oles map[string]*string
@@ -28,13 +32,14 @@ type Word struct {
 }
 
 //解析word
-func (w *Word) Parser(filepath string) {
+func Parser(filepath string) *Word {
 	doc, err := document.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//得到doc指针数据
+	var w Word
 	w.doc = doc
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
@@ -44,23 +49,32 @@ func (w *Word) Parser(filepath string) {
 
 	//读取table数据
 	w.getTableData()
+
+	return &w
 }
 
 //读取表单数据
 func (w *Word) getTableData() {
 	tables := w.doc.Tables()
 	for _, table := range tables {
+		//读取一个表单里面的所有行
 		rows := table.Rows()
-		w.getRowsData(&rows)
+
+		//读取行里面的数据
+		tableData := w.getRowsData(&rows)
+		w.Tables = append(w.Tables, &tableData)
 	}
 }
 
 //读取所有行的数据
-func (w *Word) getRowsData(rows *[]document.Row) {
+func (w *Word) getRowsData(rows *[]document.Row) TableData {
+	var td TableData
 	for _, row := range *rows {
 		rowData := w.getRowText(&row)
-		w.Content = append(w.Content, &rowData)
+		td.Rows = append(td.Rows, &rowData)
 	}
+
+	return td
 }
 
 //读取每一行的数据
@@ -92,15 +106,16 @@ func (w *Word) getCellText(cell *document.Cell) string {
 				for _, di := range r.DrawingInline() {
 					imf, _ := di.GetImage()
 					uri := w.images[imf.RelID()]
-					fmt.Println(uri)
+					text = fmt.Sprintf("<img src='%s' />", uri)
 				}
+				//	公式数据
 			} else if r.OleObjects() != nil {
 				for _, ole := range r.OleObjects() {
 					latex := w.oles[ole.OleRid()]
-					fmt.Println(*latex)
+					text = *latex
 				}
+				//	文本数据
 			} else {
-				//文本数据
 				text = r.Text()
 			}
 
