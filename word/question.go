@@ -323,7 +323,6 @@ func (q *Question) parseResolve(row *RowData) {
 		return
 	}
 
-	//todo 带图片的文本需要处理
 	resolveObj := QuestionResolve{
 		Resolve:        content,
 		MimeType:       0,
@@ -377,7 +376,6 @@ func (q *Question) parseAnswer(row *RowData) {
 	var spNums = strings.Join(utils.ReadNum(sps), ",")
 
 	if isChoice {
-		//todo 带图片的文本需要处理
 		choiceObj := QuestionChoice{
 			Content:          content,
 			Correct:          correct,
@@ -388,7 +386,6 @@ func (q *Question) parseAnswer(row *RowData) {
 
 		q.QChoice = append(q.QChoice, &choiceObj)
 	} else {
-		//todo 带图片的文本需要处理
 		answerObj := QuestionAnswer{
 			Answer:           content,
 			AutoCorrect:      0,
@@ -409,7 +406,6 @@ func (q *Question) parseHint(row *RowData) {
 		return
 	}
 
-	//todo 带图片的文本需要处理
 	hintObj := QuestionHint{
 		Hint: content,
 	}
