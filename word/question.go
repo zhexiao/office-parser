@@ -48,22 +48,31 @@ type QuestionHint struct {
 
 type Question struct {
 	BasicType       string                  `json:"basic_type"`
-	ResUsage        int                     `json:"res_usage"`
+	ResUsage        string                  `json:"res_usage"`
 	Year            int                     `json:"year"`
 	Author          string                  `json:"author"`
 	LabelString     int                     `json:"label_string"`
 	Grade           int                     `json:"grade"`
 	QuestionAppType int                     `json:"question_app_type"`
 	OftenTest       int                     `json:"often_test"`
-	AutoGrade       int                     `json:"auto_grade"`
 	Note            string                  `json:"note"`
 	EstimatedTime   int                     `json:"estimated_time"`
-	Diff            float64                 `json:"diff"`
-	Identify        float64                 `json:"identify"`
-	Guess           float64                 `json:"guess"`
+	Diff            int                     `json:"diff"`
+	DiffDisplay     float64                 `json:"diff_display"`
+	IdentifyDisplay float64                 `json:"identify_display"`
+	Identify        int                     `json:"identify"`
+	GuessDisplay    float64                 `json:"guess_display"`
+	Guess           int                     `json:"guess"`
 	ModelType       string                  `json:"model_type"`
 	Stem            string                  `json:"stem"`
 	Image           string                  `json:"image"`
+	HasHint         int                     `json:"has_hint"`
+	StructureString string                  `json:"structure_string"`
+	Subject         int                     `json:"subject"`
+	Uploader        string                  `json:"uploader"`
+	SourceType      int                     `json:"source_type"`
+	SourceUri       string                  `json:"source_uri"`
+	QBasicType      []map[string]string     `json:"q_basic_type"`
 	QCognitionMap   []*QuestionCognitionMap `json:"q_cognition_map"`
 	QCognitionSp    []*QuestionCognitionSp  `json:"q_cognition_sp"`
 	QOutline        []*QuestionOutline      `json:"q_outline"`
@@ -80,16 +89,45 @@ func ParseQuestion(w *Word) *Question {
 	for idx, table := range w.Tables {
 		//读取基本类型
 		firstRow := table.Rows[0]
-		basicType := strings.Trim(firstRow.Content[0], " ")
+		basicType := utils.BasicType(
+			strings.Trim(firstRow.Content[0], " ")).Val()
 
-		//第一道题
+		//如果是选择题，则区分单选和多选
+		if basicType == "XZT" {
+			xztType, err := strconv.Atoi(firstRow.Content[2])
+			if err != nil {
+				log.Fatal("选择题类型转换失败")
+			}
+			switch xztType {
+			case 1:
+				basicType = utils.BasicType("单选题").Val()
+			case 2:
+				basicType = utils.BasicType("多选题").Val()
+			default:
+				log.Fatalf("选择题 类型数据有错误")
+			}
+		}
+
+		//structuring string读取
+		if basicType == "TZT" {
+			tztType, err := strconv.Atoi(firstRow.Content[2])
+			if err != nil {
+				log.Fatal("题组题 类型转换失败")
+			}
+
+			q.StructureString = utils.StructuringString(tztType).Val()
+		} else {
+			q.StructureString = utils.StructuringString(1).Val()
+		}
+
+		//第一个表格解析
 		if idx == 0 {
 			q.BasicType = basicType
 			//解析表单
 			q.parseTable(table)
 			//	后面的子题
 		} else {
-			if q.BasicType == "题组题" {
+			if q.BasicType == "TZT" {
 				var childQuestion Question
 				childQuestion.BasicType = basicType
 
@@ -114,6 +152,14 @@ func ParseQuestion(w *Word) *Question {
 }
 
 func (q *Question) parseTable(t *TableData) {
+	//基础题型数据也插入数组中
+	q.QBasicType = append(q.QBasicType, map[string]string{
+		"type": q.BasicType,
+	})
+
+	//固定数据
+	q.SourceType = 1
+
 	//解析基础数据
 	q.parseMeta(t)
 
@@ -133,7 +179,7 @@ func (q *Question) parseMeta(t *TableData) {
 				log.Fatalf("应用类型 解析失败 %s", err)
 			}
 
-			q.ResUsage = resUsage
+			q.ResUsage = utils.ResUsage(resUsage).Val()
 		case strings.Contains(title, "题库年度"):
 			year, err := strconv.Atoi(row.Content[1])
 			if err != nil {
@@ -169,19 +215,18 @@ func (q *Question) parseMeta(t *TableData) {
 				log.Fatalf("常考题 解析失败 %s", err)
 			}
 
-			//选择题没有自动批改，填空等题型才有
-			var autoGrade int
-			if len(row.Content) >= 4 {
-				autoGrade, err = strconv.Atoi(row.Content[4])
-				if err != nil {
-					log.Fatalf("自动批改 解析失败 %s", err)
-				}
-			} else {
-				autoGrade = 0
-			}
+			////选择题没有自动批改，填空等题型才有，废弃
+			//var autoGrade int
+			//if len(row.Content) >= 4 {
+			//	autoGrade, err = strconv.Atoi(row.Content[4])
+			//	if err != nil {
+			//		log.Fatalf("自动批改 解析失败 %s", err)
+			//	}
+			//} else {
+			//	autoGrade = 0
+			//}
 
 			q.OftenTest = oftenTest
-			q.AutoGrade = autoGrade
 		case strings.Contains(title, "试题备注"):
 			q.Note = row.Content[1]
 		case strings.Contains(title, "解题时间"):
@@ -190,7 +235,7 @@ func (q *Question) parseMeta(t *TableData) {
 				log.Fatalf("解题时间 解析失败 %s", err)
 			}
 
-			diff, err := strconv.ParseFloat(row.Content[3], 2)
+			diffDisplay, err := strconv.ParseFloat(row.Content[3], 2)
 			if err != nil {
 				log.Fatalf("困难度 解析失败 %s", err)
 			}
@@ -199,26 +244,29 @@ func (q *Question) parseMeta(t *TableData) {
 			if identify == "" {
 				q.Identify = 0
 			} else {
-				identify, err := strconv.ParseFloat(identify, 2)
+				identifyDisplay, err := strconv.ParseFloat(identify, 2)
 				if err != nil {
 					log.Fatalf("鉴别度 解析失败 %s", err)
 				}
-				q.Identify = identify
+				q.IdentifyDisplay = identifyDisplay
+				q.Identify = int(identifyDisplay * 100)
 			}
 
 			guess := row.Content[7]
 			if guess == "" {
 				q.Guess = 0
 			} else {
-				guess, err := strconv.ParseFloat(guess, 2)
+				guessDisplay, err := strconv.ParseFloat(guess, 2)
 				if err != nil {
 					log.Fatalf("猜度 解析失败 %s", err)
 				}
-				q.Guess = guess
+				q.GuessDisplay = guessDisplay
+				q.Guess = int(guessDisplay * 100)
 			}
 
 			q.EstimatedTime = estimatedTime
-			q.Diff = diff
+			q.DiffDisplay = diffDisplay
+			q.Diff = int(diffDisplay * 100)
 		case strings.Contains(title, "版型"):
 			q.ModelType = row.Content[1]
 		case strings.Contains(title, "题目文字"):
@@ -344,15 +392,15 @@ func (q *Question) parseAnswer(row *RowData) {
 	var sps string
 
 	switch q.BasicType {
-	case "填空":
+	case "TKT":
 		content = row.Content[0]
 		maps = row.Content[1]
 		sps = row.Content[2]
-	case "解答":
+	case "JDT":
 		content = row.Content[1]
-	case "判断题":
+	case "PDT":
 		content = row.Content[1]
-	case "选择题":
+	case "DANXT", "DUOXT":
 		isChoice = true
 		correctText := row.Content[0]
 
@@ -410,5 +458,6 @@ func (q *Question) parseHint(row *RowData) {
 		Hint: content,
 	}
 
+	q.HasHint = 1
 	q.QHint = append(q.QHint, &hintObj)
 }

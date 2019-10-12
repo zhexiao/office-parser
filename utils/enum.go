@@ -4,12 +4,14 @@ package utils
 type BasicType string
 
 const (
+	BT_XZT   BasicType = "选择题"
 	BT_DANXT BasicType = "单选题"
 	BT_DUOXT BasicType = "多选题"
 	BT_TKT   BasicType = "填空"
 	BT_PDT   BasicType = "判断题"
 	BT_JDT   BasicType = "解答题"
 	BT_ZWT   BasicType = "作文题"
+	BT_TZT   BasicType = "题组题"
 )
 
 func (b BasicType) Val() string {
@@ -26,8 +28,13 @@ func (b BasicType) Val() string {
 		return "JDT"
 	case BT_ZWT:
 		return "ZWT"
+	case BT_TZT:
+		return "TZT"
+	case BT_XZT:
+		return "XZT"
+	default:
+		return ""
 	}
-	return ""
 }
 
 //应用场景
@@ -53,6 +60,31 @@ func (r ResUsage) Val() string {
 		return "PKG"
 	case RU_HW:
 		return "HW"
+	default:
+		return ""
 	}
-	return ""
+}
+
+//structuring string
+type StructuringString int
+
+const (
+	SS_DANT StructuringString = 1
+	//一型题组题：主题和子题使用同一级编号，1,2,3,4
+	SS_TZTA StructuringString = 8
+	//二型题组题：主题和子题使用上下级编号，主题1，子题（1）
+	SS_TZTB StructuringString = 9
+)
+
+func (s StructuringString) Val() string {
+	switch s {
+	case SS_DANT:
+		return "DANT"
+	case SS_TZTA:
+		return "TZTA"
+	case SS_TZTB:
+		return "TZTB"
+	default:
+		return ""
+	}
 }

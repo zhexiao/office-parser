@@ -9,7 +9,7 @@ import (
 
 func main() {
 	//解析数据
-	//q := word.Convert("./test/question-tzt-201903011.docx")
+	//q := word.Convert("./test/question-choice-201903011.docx")
 	q := word.Convert("./test/question-fill.docx")
 
 	//转为json数据

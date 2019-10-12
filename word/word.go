@@ -106,6 +106,7 @@ func (w *Word) getCellText(cell *document.Cell) string {
 				for _, di := range r.DrawingInline() {
 					imf, _ := di.GetImage()
 					uri := w.images[imf.RelID()]
+
 					text = fmt.Sprintf("<img src='%s' />", uri)
 				}
 				//	公式数据
