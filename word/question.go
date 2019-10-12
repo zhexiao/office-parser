@@ -224,7 +224,7 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "题目文字"):
 			q.Stem = row.Content[1]
 		case strings.Contains(title, "题目图片"):
-			q.Image = "需要通过上传到七牛保存图片地址"
+			q.Image = row.Content[1]
 		}
 	}
 }

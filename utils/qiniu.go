@@ -62,7 +62,10 @@ func UploadFileToQiniu(key string, localFile string) string {
 		bucket:    cfg.bucket,
 		zone:      cfg.zone,
 	}
-	ret := q.uploadCloud(key, localFile)
+
+	//图片地址新增前缀office_parser
+	pathKey := fmt.Sprintf("office_parser/%s", key)
+	ret := q.uploadCloud(pathKey, localFile)
 
 	//返回地址
 	return fmt.Sprintf("%s/%s", cfg.domain, ret.Key)
