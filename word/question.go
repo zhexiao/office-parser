@@ -83,16 +83,20 @@ type Question struct {
 	QRelation       []*Question             `json:"q_relation"`
 }
 
+func NewQuestion() *Question {
+	return &Question{}
+}
+
 //把word里面的试题数据解析出来
 func ParseQuestion(w *Word) *Question {
-	var q Question
+	q := NewQuestion()
 	for idx, table := range w.Tables {
 		//读取基本类型
 		firstRow := table.Rows[0]
 		basicType := utils.BasicType(
 			strings.Trim(firstRow.Content[0], " ")).Val()
 
-		//如果是选择题，则区分单选和多选
+		//基本类型，如果是选择题，则区分单选和多选
 		if basicType == "XZT" {
 			xztType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
@@ -128,7 +132,7 @@ func ParseQuestion(w *Word) *Question {
 			//	后面的子题
 		} else {
 			if q.BasicType == "TZT" {
-				var childQuestion Question
+				childQuestion := NewQuestion()
 				childQuestion.BasicType = basicType
 
 				//解析表单
@@ -143,12 +147,12 @@ func ParseQuestion(w *Word) *Question {
 				childQuestion.OftenTest = q.OftenTest
 
 				//子题插入到母题
-				q.QRelation = append(q.QRelation, &childQuestion)
+				q.QRelation = append(q.QRelation, childQuestion)
 			}
 		}
 	}
 
-	return &q
+	return q
 }
 
 func (q *Question) parseTable(t *TableData) {
@@ -279,8 +283,10 @@ func (q *Question) parseMeta(t *TableData) {
 
 //试题附加属性
 func (q *Question) parseAddon(t *TableData) {
-	var answerTable bool
-	var hintTable bool
+	var (
+		answerTable bool
+		hintTable   bool
+	)
 
 	for _, row := range t.Rows {
 		title := strings.Trim(row.Content[0], " ")
@@ -384,12 +390,16 @@ func (q *Question) parseResolve(row *RowData) {
 //试题答案(答案的数据读取需要区分不同的题型)
 func (q *Question) parseAnswer(row *RowData) {
 	//选择题的属性
-	var isChoice = false
-	var correct bool
+	var (
+		isChoice = false
+		correct  bool
+	)
 
-	var content string
-	var maps string
-	var sps string
+	var (
+		content string
+		maps    string
+		sps     string
+	)
 
 	switch q.BasicType {
 	case "TKT":
@@ -420,8 +430,10 @@ func (q *Question) parseAnswer(row *RowData) {
 		sps = row.Content[3]
 	}
 
-	var mapNums = strings.Join(utils.ReadNum(maps), ",")
-	var spNums = strings.Join(utils.ReadNum(sps), ",")
+	var (
+		mapNums = strings.Join(utils.ReadNum(maps), ",")
+		spNums  = strings.Join(utils.ReadNum(sps), ",")
+	)
 
 	if isChoice {
 		choiceObj := QuestionChoice{

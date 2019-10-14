@@ -31,6 +31,10 @@ type Word struct {
 	images map[string]string
 }
 
+func NewWord() *Word {
+	return &Word{}
+}
+
 //解析word
 func Parser(filepath string) *Word {
 	doc, err := document.Open(filepath)
@@ -39,7 +43,7 @@ func Parser(filepath string) *Word {
 	}
 
 	//得到doc指针数据
-	var w Word
+	w := NewWord()
 	w.doc = doc
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
@@ -50,7 +54,7 @@ func Parser(filepath string) *Word {
 	//读取table数据
 	w.getTableData()
 
-	return &w
+	return w
 }
 
 //读取表单数据
