@@ -47,6 +47,7 @@ type QuestionHint struct {
 }
 
 type Question struct {
+	Qid             string                  `json:"qid"`
 	BasicType       string                  `json:"basic_type"`
 	ResUsage        string                  `json:"res_usage"`
 	Year            int                     `json:"year"`
