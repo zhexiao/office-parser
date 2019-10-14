@@ -4,14 +4,14 @@ package utils
 type BasicType string
 
 const (
-	BT_XZT   BasicType = "选择题"
-	BT_DANXT BasicType = "单选题"
-	BT_DUOXT BasicType = "多选题"
-	BT_TKT   BasicType = "填空"
-	BT_PDT   BasicType = "判断题"
-	BT_JDT   BasicType = "解答题"
-	BT_ZWT   BasicType = "作文题"
-	BT_TZT   BasicType = "题组题"
+	BT_XZT   = "选择题"
+	BT_DANXT = "单选题"
+	BT_DUOXT = "多选题"
+	BT_TKT   = "填空"
+	BT_PDT   = "判断题"
+	BT_JDT   = "解答题"
+	BT_ZWT   = "作文题"
+	BT_TZT   = "题组题"
 )
 
 func (b BasicType) Val() string {
@@ -41,11 +41,11 @@ func (b BasicType) Val() string {
 type ResUsage int
 
 const (
-	RU_ILA ResUsage = 1
-	RU_LAS ResUsage = 2
-	RU_CA  ResUsage = 3
-	RU_PKG ResUsage = 4
-	RU_HW  ResUsage = 5
+	RU_ILA = iota + 1
+	RU_LAS
+	RU_CA
+	RU_PKG
+	RU_HW
 )
 
 func (r ResUsage) Val() string {
@@ -69,11 +69,11 @@ func (r ResUsage) Val() string {
 type StructuringString int
 
 const (
-	SS_DANT StructuringString = 1
+	SS_DANT = 1
 	//一型题组题：主题和子题使用同一级编号，1,2,3,4
-	SS_TZTA StructuringString = 8
+	SS_TZTA = 8
 	//二型题组题：主题和子题使用上下级编号，主题1，子题（1）
-	SS_TZTB StructuringString = 9
+	SS_TZTB = 9
 )
 
 func (s StructuringString) Val() string {
@@ -84,6 +84,51 @@ func (s StructuringString) Val() string {
 		return "TZTA"
 	case SS_TZTB:
 		return "TZTB"
+	default:
+		return ""
+	}
+}
+
+//试题 label_string
+type QuestionLabelString int
+
+const (
+	QLS_TBLXT = iota + 1
+	QLS_DYT
+	QLS_MNT
+	QLS_ZHENT
+	QLS_XBT
+	QLS_YZT
+	QLS_ZXT
+	QLS_ZHT
+)
+
+//    TBLXT = 1  # 随堂练习题 -> 同步练习题
+//    DYT = 2  # 单元测试 -> 单元测试题
+//    MNT = 3  # 模拟题 -> 模拟题
+//    ZHENT = 4  # 真题 -> 真题
+//    XBT = 5  # 校本题 -> 校本题
+//    YZT = 6  # 压轴题 -> 压轴题
+//    ZXT = 7  # 专项题
+//    ZHT = 8  # 综合题
+func (q QuestionLabelString) Val() string {
+	switch q {
+	case QLS_TBLXT:
+		return "TBLXT"
+	case QLS_DYT:
+		return "DYT"
+	case QLS_MNT:
+		return "MNT"
+	case QLS_ZHENT:
+		return "ZHENT"
+	case QLS_XBT:
+		return "XBT"
+	case QLS_YZT:
+		return "YZT"
+	case QLS_ZXT:
+		return "ZXT"
+	case QLS_ZHT:
+		return "ZHT"
 	default:
 		return ""
 	}

@@ -51,7 +51,7 @@ type Question struct {
 	ResUsage        string                  `json:"res_usage"`
 	Year            int                     `json:"year"`
 	Author          string                  `json:"author"`
-	LabelString     int                     `json:"label_string"`
+	LabelString     string                  `json:"label_string"`
 	Grade           int                     `json:"grade"`
 	QuestionAppType int                     `json:"question_app_type"`
 	OftenTest       int                     `json:"often_test"`
@@ -73,6 +73,7 @@ type Question struct {
 	SourceType      int                     `json:"source_type"`
 	SourceUri       string                  `json:"source_uri"`
 	QBasicType      []map[string]string     `json:"q_basic_type"`
+	QLabelString    []map[string]string     `json:"q_label_string"`
 	QCognitionMap   []*QuestionCognitionMap `json:"q_cognition_map"`
 	QCognitionSp    []*QuestionCognitionSp  `json:"q_cognition_sp"`
 	QOutline        []*QuestionOutline      `json:"q_outline"`
@@ -198,7 +199,10 @@ func (q *Question) parseMeta(t *TableData) {
 				log.Fatalf("试题描述类型 解析失败 %s", err)
 			}
 
-			q.LabelString = labelString
+			q.LabelString = utils.QuestionLabelString(labelString).Val()
+			q.QLabelString = append(q.QLabelString, map[string]string{
+				"label": q.LabelString,
+			})
 		case strings.Contains(title, "适用年级"):
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
