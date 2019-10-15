@@ -1,22 +1,19 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"office-parser/word"
-)
+import "office-parser/excel"
 
 func main() {
-	//解析数据
-	//q := word.Convert("./test/question-choice-201903011.docx")
-	q := word.Convert("./test/question-fill.docx")
+	//解析word数据
+	//q := word.Convert("./test/question-fill-201903011.docx")
+	//
+	////转为json数据
+	//jsonBytes, err := json.Marshal(q)
+	//if err != nil {
+	//	log.Fatalf("json转换失败: %s", err)
+	//}
+	//
+	//fmt.Println(string(jsonBytes))
 
-	//转为json数据
-	jsonBytes, err := json.Marshal(q)
-	if err != nil {
-		log.Fatalf("json转换失败: %s", err)
-	}
-
-	fmt.Println(string(jsonBytes))
+	//解析excel数据
+	excel.Parser("./test/paper_20190703.xlsx")
 }
