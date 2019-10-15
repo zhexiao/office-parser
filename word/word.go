@@ -44,6 +44,7 @@ func Parser(filepath string) *Word {
 
 	//得到doc指针数据
 	w := NewWord()
+	w.Uri = filepath
 	w.doc = doc
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
@@ -111,7 +112,7 @@ func (w *Word) getCellText(cell *document.Cell) string {
 					imf, _ := di.GetImage()
 					uri := w.images[imf.RelID()]
 
-					text = fmt.Sprintf("<img src='%s' />", uri)
+					text = fmt.Sprintf("<img src='%s' style='width:%s;height:%s'/>", uri, di.X().Extent.Size().Width, di.X().Extent.Size().Height)
 				}
 				//	公式数据
 			} else if r.OleObjects() != nil {

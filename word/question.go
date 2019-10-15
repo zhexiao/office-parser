@@ -92,6 +92,7 @@ func NewQuestion() *Question {
 //把word里面的试题数据解析出来
 func ParseQuestion(w *Word) *Question {
 	q := NewQuestion()
+
 	for idx, table := range w.Tables {
 		//读取基本类型
 		firstRow := table.Rows[0]
