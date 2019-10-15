@@ -8,8 +8,9 @@ const (
 	BT_DANXT = "单选题"
 	BT_DUOXT = "多选题"
 	BT_TKT   = "填空"
-	BT_PDT   = "判断题"
+	BT_JD    = "解答"
 	BT_JDT   = "解答题"
+	BT_PDT   = "判断题"
 	BT_ZWT   = "作文题"
 	BT_TZT   = "题组题"
 )
@@ -24,6 +25,8 @@ func (b BasicType) Val() string {
 		return "TKT"
 	case BT_PDT:
 		return "PDT"
+	case BT_JD:
+		return "JD"
 	case BT_JDT:
 		return "JDT"
 	case BT_ZWT:

@@ -103,7 +103,7 @@ func ParseQuestion(w *Word) *Question {
 		if basicType == "XZT" {
 			xztType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Fatal("选择题类型转换失败")
+				log.Fatal("选择题 类型转换失败")
 			}
 			switch xztType {
 			case 1:
@@ -112,6 +112,19 @@ func ParseQuestion(w *Word) *Question {
 				basicType = utils.BasicType("多选题").Val()
 			default:
 				log.Fatalf("选择题 类型数据有错误")
+			}
+		} else if basicType == "JD" {
+			jdType, err := strconv.Atoi(firstRow.Content[2])
+			if err != nil {
+				log.Fatal("解答 类型转换失败")
+			}
+			switch jdType {
+			case 5:
+				basicType = utils.BasicType("解答题").Val()
+			case 6:
+				basicType = utils.BasicType("作文题").Val()
+			default:
+				log.Fatalf("解答 类型数据有错误")
 			}
 		}
 
@@ -317,13 +330,6 @@ func (q *Question) parseAddon(t *TableData) {
 
 		//读取答案数据
 		if answerTable {
-			content := row.Content[0]
-
-			//非选择题的标题
-			if strings.Contains(content, "答案内容") {
-				continue
-			}
-
 			q.parseAnswer(row)
 		}
 
@@ -402,9 +408,10 @@ func (q *Question) parseAnswer(row *RowData) {
 	)
 
 	var (
-		content string
-		maps    string
-		sps     string
+		content      string
+		maps         string
+		sps          string
+		auto_corrent int
 	)
 
 	switch q.BasicType {
@@ -412,10 +419,15 @@ func (q *Question) parseAnswer(row *RowData) {
 		content = row.Content[0]
 		maps = row.Content[1]
 		sps = row.Content[2]
-	case "JDT":
+
+		if strings.Contains(content, "答案内容") {
+			return
+		}
+	case "JDT", "ZWT":
 		content = row.Content[1]
 	case "PDT":
 		content = row.Content[1]
+		auto_corrent = 1
 	case "DANXT", "DUOXT":
 		isChoice = true
 		correctText := row.Content[0]
@@ -454,7 +466,7 @@ func (q *Question) parseAnswer(row *RowData) {
 	} else {
 		answerObj := QuestionAnswer{
 			Answer:           content,
-			AutoCorrect:      0,
+			AutoCorrect:      auto_corrent,
 			CognitionMapNums: mapNums,
 			CognitionSpNums:  spNums,
 			Assessment:       "",
