@@ -24,7 +24,7 @@ func NewRowData() *RowData {
 }
 
 //解析excel
-func Parser(filepath string) {
+func Parser(filepath string) *Excel {
 	workbook, err := spreadsheet.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
@@ -37,6 +37,8 @@ func Parser(filepath string) {
 
 	//读取第一个sheet的数据
 	e.getSheetData(0)
+
+	return e
 }
 
 //读取第n个sheet表

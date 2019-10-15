@@ -136,3 +136,60 @@ func (q QuestionLabelString) Val() string {
 		return ""
 	}
 }
+
+//试卷 label_string
+type PaperLabelString int
+
+//("ILA_TBLX", "同步练习卷"),
+//("ILA_QZQM", "期中期末卷"),
+//(PAPER_ILA_ZTJ, "真题卷"),
+//("ILA_MNJ", "模拟卷"),
+//("ILA_DYCS", "单元测试卷"),
+//("ILA_XBJH", "校本精华卷"),
+//("LAS_JCJ", "基础卷"),
+//("LAS_TSJ", "提升卷"),
+//("LAS_JSJ", "竞赛卷"),
+//("ILA_ZXSJ", "专项试卷"),
+//("ILA_ZHSJ", "综合试卷"),
+const (
+	ILA_TBLX = iota + 1
+	ILA_QZQM
+	ILA_ZTJ
+	ILA_MNJ
+	ILA_DYCS
+	ILA_XBJH
+	LAS_JCJ
+	LAS_TSJ
+	LAS_JSJ
+	ILA_ZXSJ
+	ILA_ZHSJ
+)
+
+func (p PaperLabelString) Val() string {
+	switch p {
+	case ILA_TBLX:
+		return "ILA_TBLX"
+	case ILA_QZQM:
+		return "ILA_QZQM"
+	case ILA_ZTJ:
+		return "ILA_ZTJ"
+	case ILA_MNJ:
+		return "ILA_MNJ"
+	case ILA_DYCS:
+		return "ILA_DYCS"
+	case ILA_XBJH:
+		return "ILA_XBJH"
+	case LAS_JCJ:
+		return "LAS_JCJ"
+	case LAS_TSJ:
+		return "LAS_TSJ"
+	case LAS_JSJ:
+		return "LAS_JSJ"
+	case ILA_ZXSJ:
+		return "ILA_ZXSJ"
+	case ILA_ZHSJ:
+		return "ILA_ZHSJ"
+	default:
+		return ""
+	}
+}
