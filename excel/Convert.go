@@ -12,10 +12,16 @@ func Convert(filepath string, _type string) {
 
 	switch _type {
 	case "paper":
-		//根据 excel 数据解析试卷
 		paper := ParsePaper(e)
-
 		jsonBytes, err := json.Marshal(paper)
+		if err != nil {
+			log.Fatalf("json转换失败: %s", err)
+		}
+
+		fmt.Println(string(jsonBytes))
+	case "book":
+		book := ParseBook(e)
+		jsonBytes, err := json.Marshal(book)
 		if err != nil {
 			log.Fatalf("json转换失败: %s", err)
 		}
