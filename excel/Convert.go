@@ -27,6 +27,14 @@ func Convert(filepath string, _type string) {
 		}
 
 		fmt.Println(string(jsonBytes))
+	case "cognition_map":
+		cognitionMap := ParseCognitionMap(e)
+		jsonBytes, err := json.Marshal(cognitionMap)
+		if err != nil {
+			log.Fatalf("json转换失败: %s", err)
+		}
+
+		fmt.Println(string(jsonBytes))
 	}
 
 }
