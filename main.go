@@ -15,5 +15,5 @@ func main() {
 	//fmt.Println(string(jsonBytes))
 
 	//解析excel数据
-	excel.Convert("./test/paper_20190703.xlsx", "paper")
+	excel.Convert("./test/paper.xlsx", "paper")
 }

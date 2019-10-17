@@ -1,8 +1,10 @@
 package excel
 
 import (
+	"fmt"
 	"github.com/unidoc/unioffice/spreadsheet"
 	"log"
+	"strconv"
 )
 
 type RowData struct {
@@ -56,28 +58,22 @@ func (e *Excel) getSheet(n int) *spreadsheet.Sheet {
 func (e *Excel) getSheetData(n int) {
 	sheet := e.getSheet(n)
 
-	e.getRowsData(sheet.Rows())
-}
+	rowStart, colStart, rowEnd, colEnd := sheet.ExtentsIndex()
+	rowStartInt := []byte(rowStart)[0]
+	rowEndInt := []byte(rowEnd)[0]
 
-//读取多行里面的数据
-func (e *Excel) getRowsData(rows []spreadsheet.Row) {
-	for _, row := range rows {
-		rowData := e.getRowData(row.Cells())
+	//读取每一行的数据
+	for i := colStart; i <= colEnd; i++ {
+		rowData := NewRowData()
+
+		//读取每个单元的数据
+		for n := rowStartInt; n <= rowEndInt; n++ {
+			cellRef := fmt.Sprintf("%s%s", string([]byte{n}), strconv.Itoa(int(i)))
+			val := sheet.Cell(cellRef).GetString()
+
+			rowData.Content = append(rowData.Content, val)
+		}
+
 		e.RowsData = append(e.RowsData, rowData)
 	}
-}
-
-//读取每一行的数据
-func (e *Excel) getRowData(cells []spreadsheet.Cell) *RowData {
-	rowData := NewRowData()
-	for _, cell := range cells {
-		rowData.Content = append(rowData.Content, e.getCellData(cell))
-	}
-
-	return rowData
-}
-
-//读取单元格里面的数据值
-func (e *Excel) getCellData(cell spreadsheet.Cell) string {
-	return cell.GetString()
 }

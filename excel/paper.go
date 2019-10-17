@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-type Paper struct {
-	Paper     PaperAttr `json:"'paper'"`
-	Questions []*SubtypeAttr
+type CT_Paper struct {
+	Paper     *PaperAttr     `json:"paper"`
+	Questions []*SubtypeAttr `json:"questions"`
 }
 
 type PaperAttr struct {
@@ -40,8 +40,8 @@ type QuestionAttr struct {
 	Child []*QuestionAttr `json:"child"`
 }
 
-func NewPaper() *Paper {
-	return &Paper{}
+func NewCT_Paper() *CT_Paper {
+	return &CT_Paper{}
 }
 
 func NewPaperAttr() *PaperAttr {
@@ -56,15 +56,19 @@ func NewSubtypeAttr() *SubtypeAttr {
 	return &SubtypeAttr{}
 }
 
-func ParsePaper(e *Excel) {
-	paper := NewPaper()
+func ParsePaper(e *Excel) *CT_Paper {
+	paper := NewCT_Paper()
+	paperAttr := NewPaperAttr()
+	var subtypeAttrs []*SubtypeAttr
 
-	//解析数据
-	paper.parseRow(e)
-}
-
-func (paper Paper) parseRow(e *Excel) {
-	pAttr := NewPaperAttr()
+	var (
+		//大题索引
+		currentSubtypeIdx = -1
+		//小题索引
+		currentQuestionIdx int
+		//子题索引
+		currentChildQIdx int
+	)
 
 	//循环数据
 	for idx, row := range e.RowsData {
@@ -73,6 +77,7 @@ func (paper Paper) parseRow(e *Excel) {
 		case 0, 2, 4:
 			continue
 		case 1:
+			//读取试卷本身属性
 			resUsageNum, err := strconv.Atoi(row.Content[0])
 			if err != nil {
 				log.Fatalf("应用类型 解析失败 %s", err)
@@ -88,12 +93,13 @@ func (paper Paper) parseRow(e *Excel) {
 			note := row.Content[2]
 			name := row.Content[3]
 
-			pAttr.ResUsage = resUsage
-			pAttr.LabelString = labelString
-			pAttr.Labels = []string{labelString}
-			pAttr.Note = note
-			pAttr.Name = name
+			paperAttr.ResUsage = resUsage
+			paperAttr.LabelString = labelString
+			paperAttr.Labels = []string{labelString}
+			paperAttr.Note = note
+			paperAttr.Name = name
 		case 3:
+			//读取试卷本身属性
 			outlineNumsContent := row.Content[0]
 			nums := strings.Join(utils.ReadNum(outlineNumsContent), ",")
 
@@ -119,16 +125,99 @@ func (paper Paper) parseRow(e *Excel) {
 
 			area := row.Content[5]
 
-			pAttr.OutlineNums = nums
-			pAttr.Grade = grade
-			pAttr.Time = time
-			pAttr.Score = totalScore
-			pAttr.Year = year
-			pAttr.Area = area
+			paperAttr.OutlineNums = nums
+			paperAttr.Grade = grade
+			paperAttr.Time = time
+			paperAttr.Score = totalScore
+			paperAttr.Year = year
+			paperAttr.Area = area
 		default:
-			fmt.Println(row)
+			rowLen := len(row.Content)
+			subtypeName := strings.Trim(row.Content[0], " ")
+
+			//存在即认为是一个大题的开始
+			if subtypeName != "" {
+				currentSubtypeIdx += 1
+
+				//大题开始，重置下面的子题索引
+				currentQuestionIdx = -1
+
+				if rowLen < 5 {
+					log.Fatal("表单结构有误，找不到大题描述")
+				}
+
+				subtypNote := strings.Trim(row.Content[5], " ")
+
+				//大题属性
+				subAttr := NewSubtypeAttr()
+				subAttr.Name = subtypeName
+				subAttr.Note = subtypNote
+
+				//把大题插入到大题列表中
+				subtypeAttrs = append(subtypeAttrs, subAttr)
+			} else {
+				//认为是小题
+				qId := strings.Trim(row.Content[1], " ")
+				if qId != "" {
+					//重置子题索引
+					currentChildQIdx = 1
+
+					//当前试题索引
+					currentQuestionIdx += 1
+
+					//读取试题属性
+					qAttr := NewQuestionAttr()
+					qAttr.Qid = qId
+					if rowLen < 4 {
+						log.Fatal("表结构有误，找不到分数列")
+					}
+
+					qScore, err := strconv.ParseFloat(row.Content[3], 2)
+					if err != nil {
+						log.Fatalf("分数转为浮点类型出错 %s %s", err, qId)
+					}
+					qAttr.Score = qScore
+
+					//插入到对应的所属大题
+					subtypeAttrs[currentSubtypeIdx].Question = append(
+						subtypeAttrs[currentSubtypeIdx].Question, qAttr)
+
+				} else {
+					//	认为是子题
+					childQId := strings.Trim(row.Content[2], " ")
+					if childQId == "" {
+						continue
+					}
+
+					//按规范重构子题ID为母题id_n
+					parentQ := subtypeAttrs[currentSubtypeIdx].Question[currentQuestionIdx]
+					newChildQid := fmt.Sprintf("%s_%s", parentQ.Qid, strconv.Itoa(currentChildQIdx))
+
+					//读取试题属性
+					childQAttr := NewQuestionAttr()
+					childQAttr.Qid = newChildQid
+					if rowLen < 5 {
+						log.Fatal("表结构有误，找不到分数列")
+					}
+
+					childQScore, err := strconv.ParseFloat(row.Content[4], 2)
+					if err != nil {
+						log.Fatalf("子题分数 转为浮点类型出错 %s", err)
+					}
+					childQAttr.Score = childQScore
+
+					//插入到对应的所属母题
+					parentQ.Child = append(parentQ.Child, childQAttr)
+
+					//子题索引 + 1
+					currentChildQIdx += 1
+				}
+			}
 		}
 	}
 
-	fmt.Printf("%#v \n", pAttr)
+	paper.Paper = paperAttr
+	paper.Questions = subtypeAttrs
+
+	return paper
 }
