@@ -7,29 +7,32 @@ import (
 	"strings"
 )
 
-type CT_CognitionMap struct {
-	Num       string `json:"num"`
-	ParentNum string `json:"parent_num"`
-	Level     int    `json:"level"`
-	Sort      int    `json:"sort"`
-	Name      string `json:"name"`
-	PreNum    string `json:"pre_num"`
-	ExtendNum string `json:"extend_num"`
-	Weight    string `json:"weight"`
-	Faculty   int    `json:"faculty"`
-	Subject   int    `json:"subject"`
+type CT_CognitionSp struct {
+	Num              string `json:"num"`
+	ParentNum        string `json:"parent_num"`
+	Level            int    `json:"level"`
+	Sort             int    `json:"sort"`
+	Name             string `json:"name"`
+	PreNum           string `json:"pre_num"`
+	ExtendNum        string `json:"extend_num"`
+	Weight           string `json:"weight"`
+	Faculty          int    `json:"faculty"`
+	Subject          int    `json:"subject"`
+	SpType           int    `json:"sp_type"`
+	CognitionMapNums string `json:"cognition_map_nums"`
 }
 
-func NewCT_CognitionMap() *CT_CognitionMap {
-	return &CT_CognitionMap{}
+func NewCT_CognitionSp() *CT_CognitionSp {
+	return &CT_CognitionSp{}
 }
 
-func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
+func ParseCognitionSp(e *Excel) []*CT_CognitionSp {
 	var (
 		//获得节点结束的列，从0开始
 		nodeEndCol int
 		faculty    int
 		subject    int
+		spType     int
 	)
 
 	//记录每一个level已经有多少个数据了
@@ -38,7 +41,7 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 	//记录每一级的最后一个num
 	levelNum := make(map[int]string)
 
-	var cogs []*CT_CognitionMap
+	var cogs []*CT_CognitionSp
 	for idx, row := range e.RowsData {
 		if idx == 0 {
 			continue
@@ -54,27 +57,35 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 				log.Fatalf("解析学科失败 %s", err)
 			}
 
+			spTypeTmp, err := strconv.Atoi(row.Content[3])
+			if err != nil {
+				log.Fatalf("解析认知点类型失败 %s", err)
+			}
+
 			subject = subjectTmp
 			faculty = facultyTmp
+			spType = spTypeTmp
 		} else if idx == 2 {
-			//得到当前#节点的结束位置
+			//得到当前 #节点 的结束位置
 			for n, v := range row.Content {
 				if strings.Contains(v, "#节点") {
 					nodeEndCol = n
 				}
 			}
 		} else {
-
 			//	下面的数据为节点数据
 			preNumStr := strings.Trim(row.Content[nodeEndCol+1], " ")
 			extendNumStr := strings.Trim(row.Content[nodeEndCol+2], " ")
+			mapsStr := strings.Trim(row.Content[nodeEndCol+4], " ")
 
 			//实例化
-			cognitionMap := NewCT_CognitionMap()
-			cognitionMap.Faculty = faculty
-			cognitionMap.Subject = subject
-			cognitionMap.PreNum = strings.Join(utils.ReadNum(preNumStr), ",")
-			cognitionMap.ExtendNum = strings.Join(utils.ReadNum(extendNumStr), ",")
+			cog := NewCT_CognitionSp()
+			cog.Faculty = faculty
+			cog.Subject = subject
+			cog.SpType = spType
+			cog.PreNum = strings.Join(utils.ReadNum(preNumStr), ",")
+			cog.ExtendNum = strings.Join(utils.ReadNum(extendNumStr), ",")
+			cog.CognitionMapNums = strings.Join(utils.ReadNum(mapsStr), ",")
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
@@ -91,16 +102,16 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 						//记录每一级的最后一个num
 						levelNum[m] = num
 						if m > 0 {
-							cognitionMap.ParentNum = levelNum[m-1]
+							cog.ParentNum = levelNum[m-1]
 						}
 
-						cognitionMap.Name = name
-						cognitionMap.Num = num
-						cognitionMap.Level = m
-						cognitionMap.Sort = levelCount[m]
+						cog.Name = name
+						cog.Num = num
+						cog.Level = m
+						cog.Sort = levelCount[m]
 
 						//插入列表
-						cogs = append(cogs, cognitionMap)
+						cogs = append(cogs, cog)
 					}
 				}
 			}

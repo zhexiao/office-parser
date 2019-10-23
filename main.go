@@ -18,4 +18,5 @@ func main() {
 	//excel.Convert("./test/paper.xlsx", "paper")
 	//excel.Convert("./test/book-index-201903011.xlsx", "book")
 	excel.Convert("./test/cognition-map-201903011.xlsx", "cognition_map")
+	//excel.Convert("./test/cognition-sp-201903011.xlsx", "cognition_sp")
 }
