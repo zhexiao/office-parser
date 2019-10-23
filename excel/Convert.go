@@ -10,47 +10,25 @@ func Convert(filepath string, _type string) {
 	//得到excel数据
 	e := Parser(filepath)
 
+	var data interface{}
 	switch _type {
 	case "paper":
-		paper := ParsePaper(e)
-		jsonBytes, err := json.Marshal(paper)
-		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
-		}
-
-		fmt.Println(string(jsonBytes))
+		data = ParsePaper(e)
 	case "book":
-		book := ParseBook(e)
-		jsonBytes, err := json.Marshal(book)
-		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
-		}
-
-		fmt.Println(string(jsonBytes))
+		data = ParseBook(e)
 	case "cognition_map":
-		cognitionMap := ParseCognitionMap(e)
-		jsonBytes, err := json.Marshal(cognitionMap)
-		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
-		}
-
-		fmt.Println(string(jsonBytes))
+		data = ParseCognitionMap(e)
 	case "cognition_sp":
-		cognitionSp := ParseCognitionSp(e)
-		jsonBytes, err := json.Marshal(cognitionSp)
-		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
-		}
-
-		fmt.Println(string(jsonBytes))
+		data = ParseCognitionSp(e)
 	case "outline":
-		outline := ParseOutline(e)
-		jsonBytes, err := json.Marshal(outline)
-		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
-		}
-
-		fmt.Println(string(jsonBytes))
+		data = ParseOutline(e)
 	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		log.Fatalf("json转换失败: %s", err)
+	}
+
+	fmt.Println(string(jsonBytes))
 
 }
