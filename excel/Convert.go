@@ -43,6 +43,14 @@ func Convert(filepath string, _type string) {
 		}
 
 		fmt.Println(string(jsonBytes))
+	case "outline":
+		outline := ParseOutline(e)
+		jsonBytes, err := json.Marshal(outline)
+		if err != nil {
+			log.Fatalf("json转换失败: %s", err)
+		}
+
+		fmt.Println(string(jsonBytes))
 	}
 
 }
