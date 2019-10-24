@@ -2,11 +2,10 @@ package excel
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
-func Convert(filepath string, _type string) {
+func Convert(filepath string, _type string) string {
 	//得到excel数据
 	e := Parser(filepath)
 
@@ -29,6 +28,5 @@ func Convert(filepath string, _type string) {
 		log.Fatalf("json转换失败: %s", err)
 	}
 
-	fmt.Println(string(jsonBytes))
-
+	return string(jsonBytes)
 }
