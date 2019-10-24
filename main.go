@@ -14,11 +14,11 @@ func main() {
 	//d1 := word.Convert("./test/question-fill-201903011.docx")
 
 	//解析excel数据
-	d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "paper_20190702.xlsx"), "paper")
-	//d1 := excel.Convert("./test/book-index-201903011.xlsx", "book")
+	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "paper_20190702.xlsx"), "paper")
+	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "book.xlsx"), "book")
+	d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "outline.xlsx"), "outline")
 	//d1 := excel.Convert("./test/cognition-map-201903011.xlsx", "cognition_map")
 	//d1 := excel.Convert("./test/cognition-sp-201903011.xlsx", "cognition_sp")
-	//d1 := excel.Convert("./test/outline-201903011.xlsx", "outline")
 
 	jsonBytes, err := json.Marshal(d1)
 	if err != nil {

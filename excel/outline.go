@@ -131,10 +131,12 @@ func ParseOutline(e *Excel) *CT_Outline {
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
-					num := strings.Join(utils.ReadNum(v), ",")
+					numArr := utils.ReadNum(v)
 					name := utils.ReadText(v)
 
-					if num != "" && name != "" {
+					if len(numArr) > 0 && name != "" {
+						num := numArr[0]
+
 						//num转大写
 						num = strings.ToUpper(num)
 
