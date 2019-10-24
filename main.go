@@ -1,20 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"office-parser/excel"
-	"office-parser/word"
 )
 
 func main() {
+	dest := `C:\Users\zhexiao\Downloads\真实excel数据`
+
 	//解析word数据
-	d1 := word.Convert("./test/question-fill-201903011.docx")
-	fmt.Println(d1)
+	//d1 := word.Convert("./test/question-fill-201903011.docx")
 
 	//解析excel数据
-	//excel.Convert("./test/paper.xlsx", "paper")
-	//excel.Convert("./test/book-index-201903011.xlsx", "book")
-	//excel.Convert("./test/cognition-map-201903011.xlsx", "cognition_map")
-	excel.Convert("./test/cognition-sp-201903011.xlsx", "cognition_sp")
-	//excel.Convert("./test/outline-201903011.xlsx", "outline")
+	d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "paper_20190702.xlsx"), "paper")
+	//d1 := excel.Convert("./test/book-index-201903011.xlsx", "book")
+	//d1 := excel.Convert("./test/cognition-map-201903011.xlsx", "cognition_map")
+	//d1 := excel.Convert("./test/cognition-sp-201903011.xlsx", "cognition_sp")
+	//d1 := excel.Convert("./test/outline-201903011.xlsx", "outline")
+
+	jsonBytes, err := json.Marshal(d1)
+	if err != nil {
+		log.Fatalf("json转换失败: %s", err)
+	}
+	fmt.Println(string(jsonBytes))
 }

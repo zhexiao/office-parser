@@ -167,7 +167,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 					//读取试题属性
 					qAttr := NewQuestionAttr()
-					qAttr.Qid = qId
+					qAttr.Qid = strings.ToLower(qId)
 					if rowLen < 4 {
 						log.Fatal("表结构有误，找不到分数列")
 					}
@@ -195,7 +195,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 					//读取试题属性
 					childQAttr := NewQuestionAttr()
-					childQAttr.Qid = newChildQid
+					childQAttr.Qid = strings.ToLower(newChildQid)
 					if rowLen < 5 {
 						log.Fatal("表结构有误，找不到分数列")
 					}
