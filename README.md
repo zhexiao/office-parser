@@ -18,5 +18,7 @@ $ cp utils/settings.go.example utils/settings.go
 
 运行
 ```
+$ go run main.go -h
+
 $ go run main.go -f ./test/book.xlsx -t book
 ```
