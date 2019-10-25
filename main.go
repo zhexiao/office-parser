@@ -67,9 +67,9 @@ func main() {
 		return nil
 	}
 
+	//执行命令行
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
