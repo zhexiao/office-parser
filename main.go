@@ -3,26 +3,73 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/urfave/cli"
 	"github.com/zhexiao/office-parser/excel"
+	"github.com/zhexiao/office-parser/word"
 	"log"
+	"os"
 )
 
 func main() {
-	dest := `./test`
+	var (
+		filepath string
+		eduType  string
+		data     interface{}
+	)
 
-	//解析word数据
-	//d1 := word.Convert("./test/question-fill-201903011.docx")
+	app := cli.NewApp()
+	app.Name = "Office Parser"
+	app.Usage = "Convert Word、Excel to json data"
+	app.Version = "2.0"
+	app.EnableBashCompletion = true
 
-	//解析excel数据
-	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "paper_20190702.xlsx"), "paper")
-	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "book.xlsx"), "book")
-	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "outline.xlsx"), "outline")
-	//d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "cognition_map.xlsx"), "cognition_map")
-	d1 := excel.Convert(fmt.Sprintf("%s/%s", dest, "cognition_sp.xlsx"), "cognition_sp")
-
-	jsonBytes, err := json.Marshal(d1)
-	if err != nil {
-		log.Fatalf("json转换失败: %s", err)
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "filepath, f",
+			Usage:       "filepath",
+			Destination: &filepath,
+		},
+		cli.StringFlag{
+			Name:        "eduType, t",
+			Usage:       "The type of the document belong to!",
+			Destination: &eduType,
+		},
 	}
-	fmt.Println(string(jsonBytes))
+
+	app.Action = func(c *cli.Context) error {
+		if filepath == "" {
+			log.Fatal("缺少必要的文件路径")
+		}
+
+		switch eduType {
+		case "question":
+			data = word.Convert(filepath)
+		case "paper":
+			data = excel.Convert(filepath, "paper")
+		case "book":
+			data = excel.Convert(filepath, "book")
+		case "outline":
+			data = excel.Convert(filepath, "outline")
+		case "cognition_map":
+			data = excel.Convert(filepath, "cognition_map")
+		case "cognition_sp":
+			data = excel.Convert(filepath, "cognition_sp")
+		default:
+			log.Fatalf("不支持的解析类型：%s", eduType)
+		}
+
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			log.Fatalf("json转换失败: %s", err)
+		}
+		fmt.Println(string(jsonBytes))
+
+		return nil
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
