@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zhexiao/office-parser/excel"
 	"log"
-	"office-parser/excel"
 )
 
 func main() {
-	dest := `C:\Users\zhexiao\Downloads\真实excel数据`
+	dest := `./test`
 
 	//解析word数据
 	//d1 := word.Convert("./test/question-fill-201903011.docx")

@@ -1,8 +1,8 @@
 package word
 
 import (
+	"github.com/zhexiao/office-parser/utils"
 	"log"
-	"office-parser/utils"
 	"strconv"
 	"strings"
 )

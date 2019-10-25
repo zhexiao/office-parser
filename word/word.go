@@ -3,11 +3,11 @@ package word
 import (
 	"bytes"
 	"fmt"
-	"github.com/unidoc/unioffice/common"
-	"github.com/unidoc/unioffice/document"
+	"gitee.com/zhexiao/unioffice/common"
+	"gitee.com/zhexiao/unioffice/document"
 	"github.com/zhexiao/mtef-go/eqn"
+	"github.com/zhexiao/office-parser/utils"
 	"log"
-	"office-parser/utils"
 	"strconv"
 	"time"
 )
