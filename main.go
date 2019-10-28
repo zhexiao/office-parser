@@ -10,6 +10,11 @@ import (
 	"os"
 )
 
+func init() {
+	//初始化七牛的配置
+	//utils.OfficeParserQiniuCfg = &utils.Qiniu{}
+}
+
 func main() {
 	var (
 		filepath string

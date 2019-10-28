@@ -2,9 +2,21 @@
 Word、Excel数据解析。
 
 # 配置文件
-修改utils/settings.go对系统进行配置，如果不存在此文件，则复制settings.go.example并对应修改此文件。
 ```
-$ cp utils/settings.go.example utils/settings.go 
+func init() {
+	utils.OfficeParserQiniuCfg = &utils.Qiniu{
+		//七牛key
+		AccessKey: "key",
+		//七牛secret
+		SecretKey: "secret",
+		//七牛存储的bucket
+		Bucket: "ups",
+		//所属区域
+		Zone: "ZoneHuanan",
+		//访问的域名地址
+		Domain: "https://test.com",
+	}
+}
 ```
 
 # 测试
