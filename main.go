@@ -60,7 +60,7 @@ func main() {
 
 		jsonBytes, err := json.Marshal(data)
 		if err != nil {
-			log.Fatalf("json转换失败111: %s", err)
+			log.Fatalf("json转换失败: %s", err)
 		}
 		fmt.Println(string(jsonBytes))
 
