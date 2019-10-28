@@ -3,6 +3,7 @@ package excel
 import (
 	"fmt"
 	"gitee.com/zhexiao/unioffice/spreadsheet"
+	"io"
 	"log"
 	"strconv"
 )
@@ -25,16 +26,30 @@ func NewRowData() *RowData {
 	return &RowData{}
 }
 
-//解析excel
-func Parser(filepath string) *Excel {
+//直接读文件内容
+func Read(r io.ReaderAt, size int64) *Excel {
+	workbook, err := spreadsheet.Read(r, size)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return parser(workbook)
+}
+
+//打开文件内容
+func Open(filepath string) *Excel {
 	workbook, err := spreadsheet.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	return parser(workbook)
+}
+
+//解析excel
+func parser(workbook *spreadsheet.Workbook) *Excel {
 	//解析word
 	e := NewExcel()
-	e.Uri = filepath
 	e.excel = workbook
 
 	//读取第一个sheet的数据

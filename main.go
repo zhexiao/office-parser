@@ -43,17 +43,17 @@ func main() {
 
 		switch eduType {
 		case "question":
-			data = word.Convert(filepath)
+			data = word.ConvertFromFile(filepath)
 		case "paper":
-			data = excel.Convert(filepath, "paper")
+			data = excel.ConvertFromFile(filepath, "paper")
 		case "book":
-			data = excel.Convert(filepath, "book")
+			data = excel.ConvertFromFile(filepath, "book")
 		case "outline":
-			data = excel.Convert(filepath, "outline")
+			data = excel.ConvertFromFile(filepath, "outline")
 		case "cognition_map":
-			data = excel.Convert(filepath, "cognition_map")
+			data = excel.ConvertFromFile(filepath, "cognition_map")
 		case "cognition_sp":
-			data = excel.Convert(filepath, "cognition_sp")
+			data = excel.ConvertFromFile(filepath, "cognition_sp")
 		default:
 			log.Fatalf("不支持的解析类型：%s", eduType)
 		}

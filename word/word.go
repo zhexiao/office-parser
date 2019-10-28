@@ -7,6 +7,7 @@ import (
 	"gitee.com/zhexiao/unioffice/document"
 	"github.com/zhexiao/mtef-go/eqn"
 	"github.com/zhexiao/office-parser/utils"
+	"io"
 	"log"
 	"strconv"
 	"time"
@@ -35,16 +36,30 @@ func NewWord() *Word {
 	return &Word{}
 }
 
-//解析word
-func Parser(filepath string) *Word {
+//直接读文件内容
+func Read(r io.ReaderAt, size int64) *Word {
+	doc, err := document.Read(r, size)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return parser(doc)
+}
+
+//打开文件内容
+func Open(filepath string) *Word {
 	doc, err := document.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	return parser(doc)
+}
+
+//解析word
+func parser(doc *document.Document) *Word {
 	//得到doc指针数据
 	w := NewWord()
-	w.Uri = filepath
 	w.doc = doc
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
