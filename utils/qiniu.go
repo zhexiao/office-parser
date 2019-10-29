@@ -21,8 +21,9 @@ type Qiniu struct {
 var OfficeParserQiniuCfg *Qiniu
 var uploadPrefix = "office_parser"
 
+//文件传输
 func UploadFileToQiniu(key string, localFile string) string {
-	OfficeParserQiniuCfg.checkCfg()
+	checkCfg()
 
 	//图片地址新增前缀office_parser
 	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
@@ -32,8 +33,9 @@ func UploadFileToQiniu(key string, localFile string) string {
 	return fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.Domain, ret.Key)
 }
 
+//数据传输
 func UploadDataToQiniu(key string, data io.Reader, size int64) string {
-	OfficeParserQiniuCfg.checkCfg()
+	checkCfg()
 
 	//图片地址新增前缀office_parser
 	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
@@ -43,7 +45,7 @@ func UploadDataToQiniu(key string, data io.Reader, size int64) string {
 	return fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.Domain, ret.Key)
 }
 
-func (q Qiniu) checkCfg() {
+func checkCfg() {
 	if OfficeParserQiniuCfg == nil {
 		log.Fatal("没有实例化office-parser的七牛配置，请检查`OfficeParserQiniuCfg`变量")
 	}
