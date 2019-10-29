@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -151,23 +152,48 @@ func (w *Word) getCellText(cell *document.Cell) string {
 func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 	w.oles = make(map[string]*string)
 
+	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
+	var wg sync.WaitGroup
+	wg.Add(len(olePaths))
+
+	//循环数据
 	for _, ole := range olePaths {
-		//调用解析库解析公式
-		latex := eqn.Convert(ole.Path())
-		w.oles[ole.Rid()] = &latex
+		//goroutine 运行
+		go func(word *Word, oleObjPath document.OleObjectPath) {
+			// 在函数退出时调用 Done
+			defer wg.Done()
+
+			//调用解析库解析公式
+			latex := eqn.Convert(oleObjPath.Path())
+			word.oles[oleObjPath.Rid()] = &latex
+		}(w, ole)
 	}
+
+	wg.Wait()
 }
 
 //把图片上传到七牛
 func (w *Word) parseImage(images []common.ImageRef) {
 	w.images = make(map[string]string)
 
-	for _, img := range images {
-		localFile := img.Path()
-		key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), img.Format())
+	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
+	var wg sync.WaitGroup
+	wg.Add(len(images))
 
-		//上传到七牛
-		uri := utils.UploadFileToQiniu(key, localFile)
-		w.images[img.RelID()] = uri
+	for _, img := range images {
+		//goroutine 运行
+		go func(word *Word, image common.ImageRef) {
+			// 在函数退出时调用 Done
+			defer wg.Done()
+
+			localFile := image.Path()
+			key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.Format())
+
+			//上传到七牛
+			uri := utils.UploadFileToQiniu(key, localFile)
+			word.images[image.RelID()] = uri
+		}(w, img)
 	}
+
+	wg.Wait()
 }
