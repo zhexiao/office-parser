@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zhexiao/office-parser/utils"
 	"github.com/zhexiao/office-parser/word"
 	"log"
 )
@@ -12,18 +11,6 @@ func init() {
 	//初始化七牛的配置
 	//utils.OfficeParserQiniuCfg = &utils.Qiniu{}
 
-	utils.OfficeParserQiniuCfg = &utils.Qiniu{
-		//七牛key
-		AccessKey: "rfHlsZIoIAw69VVfW0vgVwtG876MkXd_Skr_kNtE",
-		//七牛secret
-		SecretKey: "WxvytzvTSPbBULfA6GCxuH1CWzvekykclDxJ9MAQ",
-		//七牛存储的bucket
-		Bucket: "tccnu-ups",
-		//所属区域
-		Zone: "ZoneHuanan",
-		//访问的域名地址
-		Domain: "https://tccnu-ups.bigdata.starclink.com",
-	}
 }
 
 func main() {
