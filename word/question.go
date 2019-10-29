@@ -293,7 +293,7 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "版型"):
 			q.ModelType = row.Content[1]
 		case strings.Contains(title, "题目文字"):
-			q.Stem = row.Content[1]
+			q.Stem = row.HtmlContent[1]
 		case strings.Contains(title, "题目图片"):
 			q.Image = row.Content[1]
 		}
@@ -390,7 +390,7 @@ func (q *Question) parseResolve(row *RowData) {
 	}
 
 	resolveObj := QuestionResolve{
-		Resolve:        content,
+		Resolve:        row.HtmlContent[1],
 		MimeType:       0,
 		MimeUri:        "",
 		DefaultResolve: 1,
@@ -424,7 +424,7 @@ func (q *Question) parseAnswer(row *RowData) {
 			return
 		}
 	case "JDT", "ZWT":
-		content = row.Content[1]
+		content = row.HtmlContent[1]
 	case "PDT":
 		content = row.Content[1]
 		auto_corrent = 1
@@ -485,7 +485,7 @@ func (q *Question) parseHint(row *RowData) {
 	}
 
 	hintObj := QuestionHint{
-		Hint: content,
+		Hint: row.HtmlContent[1],
 	}
 
 	q.HasHint = 1

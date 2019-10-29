@@ -10,12 +10,14 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
 type RowData struct {
-	Content []string
+	Content     []string
+	HtmlContent []string
 }
 
 type TableData struct {
@@ -104,20 +106,24 @@ func (w *Word) getRowText(row *document.Row) RowData {
 	rowData := RowData{}
 
 	for _, cell := range cells {
-		cellText := w.getCellText(&cell)
-		rowData.Content = append(rowData.Content, cellText)
+		rawText, htmlText := w.getCellText(&cell)
+		rowData.Content = append(rowData.Content, rawText)
+		rowData.HtmlContent = append(rowData.HtmlContent, htmlText)
 	}
 
 	return rowData
 }
 
 //读取行里面每一个单元的数据
-func (w *Word) getCellText(cell *document.Cell) string {
-	paras := cell.Paragraphs()
+func (w *Word) getCellText(cell *document.Cell) (string, string) {
+	paragraphs := cell.Paragraphs()
 
 	resText := bytes.Buffer{}
-	for _, p := range paras {
-		runs := p.Runs()
+	htmlResText := bytes.Buffer{}
+
+	//循环每一个P标签数据
+	for paragIdx, paragraph := range paragraphs {
+		runs := paragraph.Runs()
 
 		for _, r := range runs {
 			var text string
@@ -142,10 +148,16 @@ func (w *Word) getCellText(cell *document.Cell) string {
 			}
 
 			resText.WriteString(text)
+			htmlResText.WriteString(text)
+		}
+
+		//新的段落换行
+		if paragIdx < len(paragraphs)-1 {
+			htmlResText.WriteString("<br/>")
 		}
 	}
 
-	return resText.String()
+	return resText.String(), htmlResText.String()
 }
 
 //把ole对象文件转为latex字符串
@@ -163,9 +175,17 @@ func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			//调用解析库解析公式
-			latex := eqn.Convert(oleObjPath.Path())
-			word.oles[oleObjPath.Rid()] = &latex
+			if _, ok := word.oles[oleObjPath.Rid()]; !ok {
+				//调用解析库解析公式
+				latex := eqn.Convert(oleObjPath.Path())
+
+				//替换$$为[ 或 ]
+				latex = strings.Replace(latex, "$$", "[", 1)
+				latex = strings.Replace(latex, "$$", "]", 1)
+
+				//保存数据
+				word.oles[oleObjPath.Rid()] = &latex
+			}
 		}(w, ole)
 	}
 
@@ -186,12 +206,15 @@ func (w *Word) parseImage(images []common.ImageRef) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			localFile := image.Path()
-			key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.Format())
+			if _, ok := word.images[image.RelID()]; !ok {
+				//调用图片上传
+				localFile := image.Path()
+				key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.Format())
 
-			//上传到七牛
-			uri := utils.UploadFileToQiniu(key, localFile)
-			word.images[image.RelID()] = uri
+				//上传到七牛
+				uri := utils.UploadFileToQiniu(key, localFile)
+				word.images[image.RelID()] = uri
+			}
 		}(w, img)
 	}
 
