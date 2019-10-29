@@ -103,7 +103,7 @@ func ParseQuestion(w *Word) *Question {
 		if basicType == "XZT" {
 			xztType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Fatal("选择题 类型转换失败")
+				log.Panic("选择题 类型转换失败")
 			}
 			switch xztType {
 			case 1:
@@ -111,12 +111,12 @@ func ParseQuestion(w *Word) *Question {
 			case 2:
 				basicType = utils.BasicType("多选题").Val()
 			default:
-				log.Fatalf("选择题 类型数据有错误")
+				log.Panicf("选择题 类型数据有错误")
 			}
 		} else if basicType == "JD" {
 			jdType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Fatal("解答 类型转换失败")
+				log.Panic("解答 类型转换失败")
 			}
 			switch jdType {
 			case 5:
@@ -124,7 +124,7 @@ func ParseQuestion(w *Word) *Question {
 			case 6:
 				basicType = utils.BasicType("作文题").Val()
 			default:
-				log.Fatalf("解答 类型数据有错误")
+				log.Panicf("解答 类型数据有错误")
 			}
 		}
 
@@ -132,7 +132,7 @@ func ParseQuestion(w *Word) *Question {
 		if basicType == "TZT" {
 			tztType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Fatal("题组题 类型转换失败")
+				log.Panic("题组题 类型转换失败")
 			}
 
 			q.StructureString = utils.StructuringString(tztType).Val()
@@ -196,14 +196,14 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "应用类型"):
 			resUsage, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("应用类型 解析失败 %s", err)
+				log.Panicf("应用类型 解析失败 %s", err)
 			}
 
 			q.ResUsage = utils.ResUsage(resUsage).Val()
 		case strings.Contains(title, "题库年度"):
 			year, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("题库年度 解析失败 %s", err)
+				log.Panicf("题库年度 解析失败 %s", err)
 			}
 
 			q.Year = year
@@ -211,7 +211,7 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "试题描述类型"):
 			labelString, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("试题描述类型 解析失败 %s", err)
+				log.Panicf("试题描述类型 解析失败 %s", err)
 			}
 
 			q.LabelString = utils.QuestionLabelString(labelString).Val()
@@ -221,21 +221,21 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "适用年级"):
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("试用年级 解析失败 %s", err)
+				log.Panicf("试用年级 解析失败 %s", err)
 			}
 
 			q.Grade = grade
 		case strings.Contains(title, "学科题型"):
 			questionAppType, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("学科题型 解析失败 %s", err)
+				log.Panicf("学科题型 解析失败 %s", err)
 			}
 
 			q.QuestionAppType = questionAppType
 		case strings.Contains(title, "常考题"):
 			oftenTest, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("常考题 解析失败 %s", err)
+				log.Panicf("常考题 解析失败 %s", err)
 			}
 
 			////选择题没有自动批改，填空等题型才有，废弃
@@ -243,7 +243,7 @@ func (q *Question) parseMeta(t *TableData) {
 			//if len(row.Content) >= 4 {
 			//	autoGrade, err = strconv.Atoi(row.Content[4])
 			//	if err != nil {
-			//		log.Fatalf("自动批改 解析失败 %s", err)
+			//		log.Panicf("自动批改 解析失败 %s", err)
 			//	}
 			//} else {
 			//	autoGrade = 0
@@ -255,12 +255,12 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "解题时间"):
 			estimatedTime, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("解题时间 解析失败 %s", err)
+				log.Panicf("解题时间 解析失败 %s", err)
 			}
 
 			diffDisplay, err := strconv.ParseFloat(row.Content[3], 2)
 			if err != nil {
-				log.Fatalf("困难度 解析失败 %s", err)
+				log.Panicf("困难度 解析失败 %s", err)
 			}
 
 			identify := row.Content[5]
@@ -269,7 +269,7 @@ func (q *Question) parseMeta(t *TableData) {
 			} else {
 				identifyDisplay, err := strconv.ParseFloat(identify, 2)
 				if err != nil {
-					log.Fatalf("鉴别度 解析失败 %s", err)
+					log.Panicf("鉴别度 解析失败 %s", err)
 				}
 				q.IdentifyDisplay = identifyDisplay
 				q.Identify = int(identifyDisplay * 100)
@@ -281,7 +281,7 @@ func (q *Question) parseMeta(t *TableData) {
 			} else {
 				guessDisplay, err := strconv.ParseFloat(guess, 2)
 				if err != nil {
-					log.Fatalf("猜度 解析失败 %s", err)
+					log.Panicf("猜度 解析失败 %s", err)
 				}
 				q.GuessDisplay = guessDisplay
 				q.Guess = int(guessDisplay * 100)

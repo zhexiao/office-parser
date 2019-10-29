@@ -43,7 +43,7 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 		if filepath == "" {
-			log.Fatal("缺少必要的文件路径")
+			log.Panic("缺少必要的文件路径")
 		}
 
 		switch eduType {
@@ -60,12 +60,12 @@ func main() {
 		case "cognition_sp":
 			data = excel.ConvertFromFile(filepath, "cognition_sp")
 		default:
-			log.Fatalf("不支持的解析类型：%s", eduType)
+			log.Panicf("不支持的解析类型：%s", eduType)
 		}
 
 		jsonBytes, err := json.Marshal(data)
 		if err != nil {
-			log.Fatalf("json转换失败: %s", err)
+			log.Panicf("json转换失败: %s", err)
 		}
 		fmt.Println(string(jsonBytes))
 
@@ -75,6 +75,6 @@ func main() {
 	//执行命令行
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }

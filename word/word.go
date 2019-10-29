@@ -40,7 +40,7 @@ func NewWord() *Word {
 func Read(r io.ReaderAt, size int64) *Word {
 	doc, err := document.Read(r, size)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return parser(doc)
@@ -50,7 +50,7 @@ func Read(r io.ReaderAt, size int64) *Word {
 func Open(filepath string) *Word {
 	doc, err := document.Open(filepath)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return parser(doc)

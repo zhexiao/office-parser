@@ -30,7 +30,7 @@ func NewRowData() *RowData {
 func Read(r io.ReaderAt, size int64) *Excel {
 	workbook, err := spreadsheet.Read(r, size)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return parser(workbook)
@@ -40,7 +40,7 @@ func Read(r io.ReaderAt, size int64) *Excel {
 func Open(filepath string) *Excel {
 	workbook, err := spreadsheet.Open(filepath)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return parser(workbook)
@@ -62,7 +62,7 @@ func parser(workbook *spreadsheet.Workbook) *Excel {
 func (e *Excel) getSheet(n int) *spreadsheet.Sheet {
 	sheetCount := e.excel.SheetCount()
 	if n > sheetCount {
-		log.Fatal("传入的数字大于excel最大的sheet")
+		log.Panic("传入的数字大于excel最大的sheet")
 	}
 
 	sheets := e.excel.Sheets()

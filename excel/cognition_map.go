@@ -46,12 +46,12 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 			//得到学科学段
 			facultyTmp, err := strconv.Atoi(row.Content[0])
 			if err != nil {
-				log.Fatalf("解析学段失败 %s", err)
+				log.Panicf("解析学段失败 %s", err)
 			}
 
 			subjectTmp, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("解析学科失败 %s", err)
+				log.Panicf("解析学科失败 %s", err)
 			}
 
 			subject = subjectTmp

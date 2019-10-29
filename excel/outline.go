@@ -72,24 +72,24 @@ func ParseOutline(e *Excel) *CT_Outline {
 			//得到学科学段
 			faculty, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("解析学段失败 %s", err)
+				log.Panicf("解析学段失败 %s", err)
 			}
 
 			subject, err := strconv.Atoi(row.Content[2])
 			if err != nil {
-				log.Fatalf("解析学科失败 %s", err)
+				log.Panicf("解析学科失败 %s", err)
 			}
 
 			publisherName := strings.Trim(row.Content[3], " ")
 
 			year, err := strconv.Atoi(row.Content[4])
 			if err != nil {
-				log.Fatalf("解析审核年份失败 %s", err)
+				log.Panicf("解析审核年份失败 %s", err)
 			}
 
 			grade, err := strconv.Atoi(row.Content[5])
 			if err != nil {
-				log.Fatalf("解析适用年级失败 %s", err)
+				log.Panicf("解析适用年级失败 %s", err)
 			}
 
 			termName := strings.Trim(row.Content[6], " ")

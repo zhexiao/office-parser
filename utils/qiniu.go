@@ -47,7 +47,7 @@ func UploadDataToQiniu(key string, data io.Reader, size int64) string {
 
 func checkCfg() {
 	if OfficeParserQiniuCfg == nil {
-		log.Fatal("没有实例化office-parser的七牛配置，请检查`OfficeParserQiniuCfg`变量")
+		log.Panic("没有实例化office-parser的七牛配置，请检查`OfficeParserQiniuCfg`变量")
 	}
 }
 

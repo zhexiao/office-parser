@@ -143,7 +143,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 				currentQuestionIdx = -1
 
 				if rowLen < 5 {
-					log.Fatal("表单结构有误，找不到大题描述")
+					log.Panic("表单结构有误，找不到大题描述")
 				}
 
 				subtypNote := strings.Trim(row.Content[5], " ")
@@ -169,7 +169,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 					qAttr := NewQuestionAttr()
 					qAttr.Qid = strings.ToLower(qId)
 					if rowLen < 4 {
-						log.Fatal("表结构有误，找不到分数列")
+						log.Panic("表结构有误，找不到分数列")
 					}
 
 					qScore, err := strconv.ParseFloat(row.Content[3], 2)
@@ -197,7 +197,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 					childQAttr := NewQuestionAttr()
 					childQAttr.Qid = strings.ToLower(newChildQid)
 					if rowLen < 5 {
-						log.Fatal("表结构有误，找不到分数列")
+						log.Panic("表结构有误，找不到分数列")
 					}
 
 					childQScore, err := strconv.ParseFloat(row.Content[4], 2)

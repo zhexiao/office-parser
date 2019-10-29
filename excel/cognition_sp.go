@@ -49,17 +49,17 @@ func ParseCognitionSp(e *Excel) []*CT_CognitionSp {
 			//得到学科学段
 			facultyTmp, err := strconv.Atoi(row.Content[0])
 			if err != nil {
-				log.Fatalf("解析学段失败 %s", err)
+				log.Panicf("解析学段失败 %s", err)
 			}
 
 			subjectTmp, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("解析学科失败 %s", err)
+				log.Panicf("解析学科失败 %s", err)
 			}
 
 			spTypeTmp, err := strconv.Atoi(row.Content[3])
 			if err != nil {
-				log.Fatalf("解析认知点类型失败 %s", err)
+				log.Panicf("解析认知点类型失败 %s", err)
 			}
 
 			subject = subjectTmp
