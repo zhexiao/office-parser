@@ -80,13 +80,13 @@ func ParsePaper(e *Excel) *CT_Paper {
 			//读取试卷本身属性
 			resUsageNum, err := strconv.Atoi(row.Content[0])
 			if err != nil {
-				log.Fatalf("应用类型 解析失败 %s", err)
+				log.Panicf("应用类型 解析失败 %s", err)
 			}
 			resUsage := utils.ResUsage(resUsageNum).Val()
 
 			labelStringNum, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("试卷描述类型 解析失败 %s", err)
+				log.Panicf("试卷描述类型 解析失败 %s", err)
 			}
 			labelString := utils.PaperLabelString(labelStringNum).Val()
 
@@ -105,22 +105,22 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Fatalf("年级 解析失败 %s", err)
+				log.Panicf("年级 解析失败 %s", err)
 			}
 
 			time, err := strconv.Atoi(row.Content[2])
 			if err != nil {
-				log.Fatalf("时间 解析失败 %s", err)
+				log.Panicf("时间 解析失败 %s", err)
 			}
 
 			totalScore, err := strconv.ParseFloat(row.Content[3], 2)
 			if err != nil {
-				log.Fatalf("总分 解析失败 %s", err)
+				log.Panicf("总分 解析失败 %s", err)
 			}
 
 			year, err := strconv.Atoi(row.Content[4])
 			if err != nil {
-				log.Fatalf("年度 解析失败 %s", err)
+				log.Panicf("年度 解析失败 %s", err)
 			}
 
 			area := row.Content[5]
@@ -174,7 +174,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 					qScore, err := strconv.ParseFloat(row.Content[3], 2)
 					if err != nil {
-						log.Fatalf("分数转为浮点类型出错 %s %s", err, qId)
+						log.Panicf("分数转为浮点类型出错 %s %s", err, qId)
 					}
 					qAttr.Score = qScore
 
@@ -202,7 +202,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 					childQScore, err := strconv.ParseFloat(row.Content[4], 2)
 					if err != nil {
-						log.Fatalf("子题分数 转为浮点类型出错 %s", err)
+						log.Panicf("子题分数 转为浮点类型出错 %s", err)
 					}
 					childQAttr.Score = childQScore
 
