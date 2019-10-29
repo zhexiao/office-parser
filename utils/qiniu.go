@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/qiniu/api.v7/auth/qbox"
 	"github.com/qiniu/api.v7/storage"
+	"io"
 	"log"
 )
 
@@ -17,16 +18,38 @@ type Qiniu struct {
 	Domain string
 }
 
-func (q Qiniu) uploadCloud(key string, localFile string) storage.PutRet {
-	//上传
-	putPolicy := storage.PutPolicy{
-		Scope:   q.Bucket,
-		Expires: 3600,
+var OfficeParserQiniuCfg *Qiniu
+var uploadPrefix = "office_parser"
+
+func UploadFileToQiniu(key string, localFile string) string {
+	OfficeParserQiniuCfg.checkCfg()
+
+	//图片地址新增前缀office_parser
+	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
+	ret := OfficeParserQiniuCfg.uploadCloud(pathKey, localFile)
+
+	//返回地址
+	return fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.Domain, ret.Key)
+}
+
+func UploadDataToQiniu(key string, data io.Reader, size int64) string {
+	OfficeParserQiniuCfg.checkCfg()
+
+	//图片地址新增前缀office_parser
+	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
+	ret := OfficeParserQiniuCfg.uploadDataToCloud(pathKey, data, size)
+
+	//返回地址
+	return fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.Domain, ret.Key)
+}
+
+func (q Qiniu) checkCfg() {
+	if OfficeParserQiniuCfg == nil {
+		log.Fatal("没有实例化office-parser的七牛配置，请检查`OfficeParserQiniuCfg`变量")
 	}
+}
 
-	mac := qbox.NewMac(q.AccessKey, q.SecretKey)
-	upToken := putPolicy.UploadToken(mac)
-
+func (q Qiniu) readCfg() storage.Config {
 	cfg := storage.Config{}
 	// 空间对应的机房
 	switch q.Zone {
@@ -44,10 +67,29 @@ func (q Qiniu) uploadCloud(key string, localFile string) storage.PutRet {
 	// 上传是否使用CDN上传加速
 	cfg.UseCdnDomains = false
 
-	formUploader := storage.NewFormUploader(&cfg)
+	return cfg
+}
+
+func (q Qiniu) readToken() string {
+	//上传
+	putPolicy := storage.PutPolicy{
+		Scope:   q.Bucket,
+		Expires: 3600,
+	}
+
+	mac := qbox.NewMac(q.AccessKey, q.SecretKey)
+	upToken := putPolicy.UploadToken(mac)
+	return upToken
+}
+
+func (q Qiniu) uploadCloud(key string, localFile string) storage.PutRet {
+	upToken := q.readToken()
+	cfg := q.readCfg()
+
 	ret := storage.PutRet{}
 	putExtra := storage.PutExtra{}
 
+	formUploader := storage.NewFormUploader(&cfg)
 	err := formUploader.PutFile(context.Background(), &ret, upToken, key, localFile, &putExtra)
 	if err != nil {
 		fmt.Println(err)
@@ -56,17 +98,18 @@ func (q Qiniu) uploadCloud(key string, localFile string) storage.PutRet {
 	return ret
 }
 
-var OfficeParserQiniuCfg *Qiniu
+func (q Qiniu) uploadDataToCloud(key string, data io.Reader, size int64) storage.PutRet {
+	upToken := q.readToken()
+	cfg := q.readCfg()
 
-func UploadFileToQiniu(key string, localFile string) string {
-	if OfficeParserQiniuCfg == nil {
-		log.Fatal("没有实例化office-parser的七牛配置，请检查`OfficeParserQiniuCfg`变量")
+	ret := storage.PutRet{}
+	putExtra := storage.PutExtra{}
+
+	formUploader := storage.NewFormUploader(&cfg)
+	err := formUploader.Put(context.Background(), &ret, upToken, key, data, size, &putExtra)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	//图片地址新增前缀office_parser
-	pathKey := fmt.Sprintf("office_parser/%s", key)
-	ret := OfficeParserQiniuCfg.uploadCloud(pathKey, localFile)
-
-	//返回地址
-	return fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.Domain, ret.Key)
+	return ret
 }
