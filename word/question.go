@@ -8,15 +8,15 @@ import (
 )
 
 type QuestionCognitionMap struct {
-	CognitionMapNum string `json:"cognition_map_num"`
+	Num string `json:"num"`
 }
 
 type QuestionOutline struct {
-	OutlineNum string `json:"outline_num"`
+	Num string `json:"num"`
 }
 
 type QuestionCognitionSp struct {
-	CognitionSpNum string `json:"cognition_sp_num"`
+	Num string `json:"num"`
 }
 
 type QuestionResolve struct {
@@ -128,21 +128,22 @@ func ParseQuestion(w *Word) *Question {
 			}
 		}
 
-		//structuring string读取
-		if basicType == "TZT" {
-			tztType, err := strconv.Atoi(firstRow.Content[2])
-			if err != nil {
-				log.Panic("题组题 类型转换失败")
-			}
-
-			q.StructureString = utils.StructuringString(tztType).Val()
-		} else {
-			q.StructureString = utils.StructuringString(1).Val()
-		}
-
 		//第一个表格解析
 		if idx == 0 {
 			q.BasicType = basicType
+
+			//structuring string读取
+			if basicType == "TZT" {
+				tztType, err := strconv.Atoi(firstRow.Content[2])
+				if err != nil {
+					log.Panic("题组题 类型转换失败")
+				}
+
+				q.StructureString = utils.StructuringString(tztType).Val()
+			} else {
+				q.StructureString = utils.StructuringString(1).Val()
+			}
+
 			//解析表单
 			q.parseTable(table)
 			//	后面的子题
@@ -251,7 +252,7 @@ func (q *Question) parseMeta(t *TableData) {
 
 			q.OftenTest = oftenTest
 		case strings.Contains(title, "试题备注"):
-			q.Note = row.Content[1]
+			q.Note = row.HtmlContent[1]
 		case strings.Contains(title, "解题时间"):
 			estimatedTime, err := strconv.Atoi(row.Content[1])
 			if err != nil {
@@ -347,7 +348,7 @@ func (q *Question) parseCognitionMap(row *RowData) {
 
 	for _, num := range numList {
 		numObj := QuestionCognitionMap{
-			CognitionMapNum: num,
+			Num: num,
 		}
 
 		q.QCognitionMap = append(q.QCognitionMap, &numObj)
@@ -361,7 +362,7 @@ func (q *Question) parseOutline(row *RowData) {
 
 	for _, num := range numList {
 		numObj := QuestionOutline{
-			OutlineNum: num,
+			Num: num,
 		}
 
 		q.QOutline = append(q.QOutline, &numObj)
@@ -375,7 +376,7 @@ func (q *Question) parseCognitionSp(row *RowData) {
 
 	for _, num := range numList {
 		numObj := QuestionCognitionSp{
-			CognitionSpNum: num,
+			Num: num,
 		}
 
 		q.QCognitionSp = append(q.QCognitionSp, &numObj)
@@ -423,6 +424,8 @@ func (q *Question) parseAnswer(row *RowData) {
 		if strings.Contains(content, "答案内容") {
 			return
 		}
+
+		content = row.HtmlContent[0]
 	case "JDT", "ZWT":
 		content = row.HtmlContent[1]
 	case "PDT":
