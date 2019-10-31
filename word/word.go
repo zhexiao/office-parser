@@ -64,6 +64,7 @@ func QuestionWord(doc *document.Document) *Word {
 	//得到doc指针数据
 	w := NewWord()
 	w.doc = doc
+	//解析公式和图片
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
 
@@ -81,8 +82,9 @@ func PaperWord(doc *document.Document) *Word {
 	//得到doc指针数据
 	w := NewWord()
 	w.doc = doc
-	//w.parseOle(w.doc.OleObjectPaths)
-	//w.parseImage(w.doc.Images)
+	//解析公式和图片
+	w.parseOle(w.doc.OleObjectPaths)
+	w.parseImage(w.doc.Images)
 
 	return w
 }
@@ -107,6 +109,32 @@ func (w *Word) getPureText() string {
 				//	文本数据
 			} else {
 				text = run.Text()
+				//fmt.Println(text)
+
+				//检查文本属性
+				if run.X().RPr != nil {
+					//加粗
+					if run.X().RPr.B != nil {
+						text = fmt.Sprintf("<b>%s</b>", text)
+					}
+
+					//下划线
+					if run.X().RPr.U != nil {
+						text = fmt.Sprintf("<u>%s</u>", text)
+					}
+
+					//斜体
+					if run.X().RPr.I != nil {
+						text = fmt.Sprintf("<i>%s</i>", text)
+					}
+
+					//着重符号
+					if run.X().RPr.Em != nil {
+						text = fmt.Sprintf("<em class='em-zhuozhong'>%s</em>", text)
+					}
+
+					//fmt.Printf("%#v \n", run.X().RPr)
+				}
 			}
 
 			//把空格替换成&nbsp;
