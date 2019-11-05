@@ -91,66 +91,161 @@ func PaperWord(doc *document.Document) *Word {
 
 //得到纯解析的word文本数据
 func (w *Word) getPureText() string {
-	resText := bytes.Buffer{}
+	res := bytes.Buffer{}
+
+	//p数据，段落自动编号当前值
+	var (
+		paragraphSortNum   int8
+		paragraphSortNumId int64
+	)
 	for _, paragraph := range w.doc.Paragraphs() {
-		//每一个段落的数据
-		paragraphBuffer := bytes.Buffer{}
+		var (
+			//段落样式
+			paragraphStyle string
+			//段落自动编号应该呈现的值
+			paragraphSortNumText string
+		)
 
-		//段落下面的每个单元文本数据
-		for _, run := range paragraph.Runs() {
-			var text string
+		//读取段落数据
+		pString := w.getParagraphData(paragraph)
 
-			//图片数据
-			if run.DrawingInline() != nil {
-				text = w.readImage(run.DrawingInline())
-				//	公式数据
-			} else if run.OleObjects() != nil {
-				text = w.readOles(run.OleObjects())
-				//	文本数据
+		//段落居中、居右
+		if paragraph.X().PPr.Jc != nil {
+			paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
+		}
+
+		//段落自动编号样式读取
+		if paragraph.X().PPr.NumPr != nil {
+			//初始化没有编号ID
+			if paragraph.X().PPr.NumPr.NumId.ValAttr != paragraphSortNumId {
+				//设置编号ID
+				paragraphSortNumId = paragraph.X().PPr.NumPr.NumId.ValAttr
+
+				//设置当前起始值为1
+				paragraphSortNum = 1
 			} else {
-				text = run.Text()
-				//fmt.Println(text)
-
-				//检查文本属性
-				if run.X().RPr != nil {
-					//加粗
-					if run.X().RPr.B != nil {
-						text = fmt.Sprintf("<b>%s</b>", text)
-					}
-
-					//下划线
-					if run.X().RPr.U != nil {
-						text = fmt.Sprintf("<u>%s</u>", text)
-					}
-
-					//斜体
-					if run.X().RPr.I != nil {
-						text = fmt.Sprintf("<i>%s</i>", text)
-					}
-
-					//着重符号
-					if run.X().RPr.Em != nil {
-						text = fmt.Sprintf("<em class='em-zhuozhong'>%s</em>", text)
-					}
-
-					//fmt.Printf("%#v \n", run.X().RPr)
-				}
+				//存在当前编号，当前值+1
+				paragraphSortNum += 1
 			}
+		} else {
+			//重置整个排序编号值
+			paragraphSortNum = 0
+		}
+
+		if paragraphSortNum != 0 {
+			switch paragraphSortNumId {
+			//圆圈编号
+			case 10:
+				switch paragraphSortNum {
+				case 1:
+					paragraphSortNumText = "①"
+				case 2:
+					paragraphSortNumText = "②"
+				case 3:
+					paragraphSortNumText = "③"
+				case 4:
+					paragraphSortNumText = "④"
+				case 5:
+					paragraphSortNumText = "⑤"
+				case 6:
+					paragraphSortNumText = "⑥"
+				case 7:
+					paragraphSortNumText = "⑦"
+				case 8:
+					paragraphSortNumText = "⑧"
+				case 9:
+					paragraphSortNumText = "⑨"
+				case 10:
+					paragraphSortNumText = "⑩"
+				}
+			//1. 2. 编号
+			case 11:
+				paragraphSortNumText = fmt.Sprintf("%d.", paragraphSortNum)
+			//(1) (2) 编号
+			case 12:
+				paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
+			}
+
+			//写入自动编号
+			pString = fmt.Sprintf("%s %s", paragraphSortNumText, pString)
+		}
+
+		//写入段落样式
+		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
+
+		//保存内容
+		res.WriteString(pString)
+	}
+
+	return res.String()
+}
+
+//读取段落数据
+func (w *Word) getParagraphData(paragraph document.Paragraph) string {
+	//存储run数据
+	paragraphBuffer := bytes.Buffer{}
+
+	//段落下面的每个单元文本数据
+	for _, run := range paragraph.Runs() {
+		//段落下面的每个单元文本数据
+		var text string
+
+		if run.DrawingInline() != nil {
+			//图片数据
+			text = w.readImage(run.DrawingInline())
+		} else if run.OleObjects() != nil {
+			//	公式数据
+			text = w.readOles(run.OleObjects())
+		} else {
+			//	文本数据
+			text = run.Text()
 
 			//把空格替换成&nbsp;
 			if strings.Contains(text, " ") {
 				text = strings.Replace(text, " ", "&nbsp;", -1)
 			}
 
-			//写入单元文本数据
-			paragraphBuffer.WriteString(text)
+			//检查文本样式
+			//parser_underline_wave 波浪线
+			//parser_em_zhuozhong	着重符
+			if run.X().RPr != nil {
+				//加粗
+				if run.X().RPr.B != nil {
+					text = fmt.Sprintf("<b>%s</b>", text)
+				}
+
+				//下划线、波浪线
+				if run.X().RPr.U != nil {
+					if run.X().RPr.U.ValAttr.String() == "single" {
+						//下划线
+						text = fmt.Sprintf("<u>%s</u>", text)
+					} else {
+						//波浪线
+						text = fmt.Sprintf("<span class='parser_underline_%s'>%s</span>", run.X().RPr.U.ValAttr.String(), text)
+					}
+				}
+
+				//斜体
+				if run.X().RPr.I != nil {
+					text = fmt.Sprintf("<i>%s</i>", text)
+				}
+
+				//着重符号
+				if run.X().RPr.Em != nil {
+					text = fmt.Sprintf("<em class='em_zhuozhong'>%s</em>", text)
+				}
+
+				//颜色
+				if run.X().RPr.Color != nil {
+					text = fmt.Sprintf("<span style='color:#%s'>%s</span>", run.X().RPr.Color.ValAttr.String(), text)
+				}
+			}
 		}
 
-		paragraphStr := fmt.Sprintf("<p>%s</p>", paragraphBuffer.String())
-		resText.WriteString(paragraphStr)
+		paragraphBuffer.WriteString(text)
 	}
 
-	return resText.String()
+	return paragraphBuffer.String()
 }
 
 //读取表格数据
