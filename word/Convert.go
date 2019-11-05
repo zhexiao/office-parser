@@ -14,7 +14,7 @@ func ConvertFromFile(filepath string) *Question {
 
 //word上传试题
 func ConvertFromData(r io.ReaderAt, size int64) *Question {
-	//得到excel数据
+	//得到word数据
 	doc := Read(r, size)
 	w := QuestionWord(doc)
 
@@ -26,6 +26,16 @@ func ConvertFromData(r io.ReaderAt, size int64) *Question {
 func ConvertPaperFromFile(filepath string) *CT_PureWord {
 	//得到word数据
 	doc := Open(filepath)
+	w := PaperWord(doc)
+
+	//解析试卷
+	return ParsePaper(w)
+}
+
+//word上传试卷
+func ConvertPaperFromData(r io.ReaderAt, size int64) *CT_PureWord {
+	//得到word数据
+	doc := Read(r, size)
 	w := PaperWord(doc)
 
 	//解析试卷
