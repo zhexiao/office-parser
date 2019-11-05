@@ -194,8 +194,18 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			//图片数据
 			text = w.readImage(run.DrawingInline())
 		} else if run.OleObjects() != nil {
-			//	公式数据
+			//公式数据
 			text = w.readOles(run.OleObjects())
+		} else if len(run.Ruby().Rt) > 0 && len(run.Ruby().RubyBase) > 0 {
+			//拼音数据
+			if len(run.Ruby().Rt) != len(run.Ruby().RubyBase) {
+				log.Println("拼音文本数据长度对不上")
+			} else {
+				for idx, rt := range run.Ruby().Rt {
+					rubyText := run.Ruby().RubyBase[idx]
+					text = fmt.Sprintf("<ruby>%s<rt>%s</rt></ruby>", rubyText, rt)
+				}
+			}
 		} else {
 			//	文本数据
 			text = run.Text()

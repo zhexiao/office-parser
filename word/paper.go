@@ -1,7 +1,5 @@
 package word
 
-import "fmt"
-
 type CT_PureWord struct {
 	SourceUri string `json:"source_uri"`
 	WordText  string `json:"word_text"`
@@ -15,6 +13,5 @@ func ParsePaper(w *Word) *CT_PureWord {
 	pWord := NewCT_PureWord()
 	pWord.WordText = w.getPureText()
 
-	fmt.Println(pWord.WordText)
 	return pWord
 }

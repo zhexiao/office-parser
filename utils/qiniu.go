@@ -76,7 +76,7 @@ func (q Qiniu) readToken() string {
 	//上传
 	putPolicy := storage.PutPolicy{
 		Scope:   q.Bucket,
-		Expires: 3600,
+		Expires: 3600 * 24 * 365 * 10,
 	}
 
 	mac := qbox.NewMac(q.AccessKey, q.SecretKey)
