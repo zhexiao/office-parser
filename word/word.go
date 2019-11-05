@@ -239,6 +239,16 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 				if run.X().RPr.Color != nil {
 					text = fmt.Sprintf("<span style='color:#%s'>%s</span>", run.X().RPr.Color.ValAttr.String(), text)
 				}
+
+				//上标，下标
+				if run.X().RPr.VertAlign != nil {
+					switch run.X().RPr.VertAlign.ValAttr.String() {
+					case "superscript":
+						text = fmt.Sprintf("<sup>%s</sup>", text)
+					case "subscript":
+						text = fmt.Sprintf("<sub>%s</sub>", text)
+					}
+				}
 			}
 		}
 
