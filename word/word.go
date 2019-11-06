@@ -109,65 +109,70 @@ func (w *Word) getPureText() string {
 		//读取段落数据
 		pString := w.getParagraphData(paragraph)
 
-		//段落居中、居右
-		if paragraph.X().PPr.Jc != nil {
-			paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
-		}
-
-		//段落自动编号样式读取
-		if paragraph.X().PPr.NumPr != nil {
-			//初始化没有编号ID
-			if paragraph.X().PPr.NumPr.NumId.ValAttr != paragraphSortNumId {
-				//设置编号ID
-				paragraphSortNumId = paragraph.X().PPr.NumPr.NumId.ValAttr
-
-				//设置当前起始值为1
-				paragraphSortNum = 1
-			} else {
-				//存在当前编号，当前值+1
-				paragraphSortNum += 1
+		//读取段落样式
+		if paragraph.X().PPr != nil {
+			//段落居中、居右
+			if paragraph.X().PPr.Jc != nil {
+				paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
-		} else {
-			//重置整个排序编号值
-			paragraphSortNum = 0
-		}
 
-		if paragraphSortNum != 0 {
-			switch paragraphSortNumId {
-			//圆圈编号
-			case 10:
-				switch paragraphSortNum {
-				case 1:
-					paragraphSortNumText = "①"
-				case 2:
-					paragraphSortNumText = "②"
-				case 3:
-					paragraphSortNumText = "③"
-				case 4:
-					paragraphSortNumText = "④"
-				case 5:
-					paragraphSortNumText = "⑤"
-				case 6:
-					paragraphSortNumText = "⑥"
-				case 7:
-					paragraphSortNumText = "⑦"
-				case 8:
-					paragraphSortNumText = "⑧"
-				case 9:
-					paragraphSortNumText = "⑨"
-				case 10:
-					paragraphSortNumText = "⑩"
+			//段落自动编号样式读取
+			if paragraph.X().PPr.NumPr != nil {
+				//初始化没有编号ID
+				if paragraph.X().PPr.NumPr.NumId.ValAttr != paragraphSortNumId {
+					//设置编号ID
+					paragraphSortNumId = paragraph.X().PPr.NumPr.NumId.ValAttr
+
+					//设置当前起始值为1
+					paragraphSortNum = 1
+				} else {
+					//存在当前编号，当前值+1
+					paragraphSortNum += 1
 				}
-			//1. 2. 编号
-			case 11:
-				paragraphSortNumText = fmt.Sprintf("%d.", paragraphSortNum)
-			//(1) (2) 编号
-			case 12:
-				paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
+			} else {
+				//重置整个排序编号值
+				paragraphSortNum = 0
 			}
 
-			//写入自动编号
-			pString = fmt.Sprintf("%s %s", paragraphSortNumText, pString)
+			if paragraphSortNum != 0 {
+				switch paragraphSortNumId {
+				//圆圈编号
+				case 1000:
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "①"
+					case 2:
+						paragraphSortNumText = "②"
+					case 3:
+						paragraphSortNumText = "③"
+					case 4:
+						paragraphSortNumText = "④"
+					case 5:
+						paragraphSortNumText = "⑤"
+					case 6:
+						paragraphSortNumText = "⑥"
+					case 7:
+						paragraphSortNumText = "⑦"
+					case 8:
+						paragraphSortNumText = "⑧"
+					case 9:
+						paragraphSortNumText = "⑨"
+					case 10:
+						paragraphSortNumText = "⑩"
+					}
+				//1. 2. 编号
+				case 1100:
+					paragraphSortNumText = fmt.Sprintf("%d.", paragraphSortNum)
+				//(1) (2) 编号
+				case 1200:
+					paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
+				default:
+					paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
+				}
+
+				//写入自动编号
+				pString = fmt.Sprintf("%s %s", paragraphSortNumText, pString)
+			}
 		}
 
 		//写入段落样式
@@ -242,7 +247,7 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 
 				//着重符号
 				if run.X().RPr.Em != nil {
-					text = fmt.Sprintf("<em class='em_zhuozhong'>%s</em>", text)
+					text = fmt.Sprintf("<span class='em_zhuozhong'>%s</span>", text)
 				}
 
 				//颜色

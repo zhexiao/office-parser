@@ -86,7 +86,7 @@ func main() {
 
 func test() {
 	//data := word.ConvertFromFile("./test/question-fill-201903011.docx")
-	data := word.ConvertPaperFromFile("./test/paper2.docx")
+	data := word.ConvertPaperFromFile("./test/text1.docx")
 
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
