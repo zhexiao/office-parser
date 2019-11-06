@@ -101,7 +101,7 @@ func (w *Word) getPureText() string {
 	for _, paragraph := range w.doc.Paragraphs() {
 		var (
 			//段落样式
-			paragraphStyle string
+			//paragraphStyle string
 			//段落自动编号应该呈现的值
 			paragraphSortNumText string
 		)
@@ -113,7 +113,10 @@ func (w *Word) getPureText() string {
 		if paragraph.X().PPr != nil {
 			//段落居中、居右
 			if paragraph.X().PPr.Jc != nil {
-				paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
+				if paragraph.X().PPr.Jc.ValAttr.String() == "center" {
+					pString = fmt.Sprintf("<center>%s</center>", pString)
+				}
+				//paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
 
 			//段落自动编号样式读取
@@ -176,7 +179,8 @@ func (w *Word) getPureText() string {
 		}
 
 		//写入段落样式
-		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
+		//pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
+		pString = fmt.Sprintf("<p>%s</p>", pString)
 
 		//保存内容
 		res.WriteString(pString)
@@ -242,7 +246,7 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 
 				//斜体
 				if run.X().RPr.I != nil {
-					text = fmt.Sprintf("<i>%s</i>", text)
+					text = fmt.Sprintf("<span style='font-style:italic'>%s</span>", text)
 				}
 
 				//着重符号
