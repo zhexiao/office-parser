@@ -117,6 +117,8 @@ func (w *Word) getPureText() string {
 					pString = fmt.Sprintf("<center>%s</center>", pString)
 				} else if paragraph.X().PPr.Jc.ValAttr.String() == "right" {
 					pString = fmt.Sprintf("<span style='float:right;'>%s</span>", pString)
+				} else if paragraph.X().PPr.Jc.ValAttr.String() == "left" {
+					pString = fmt.Sprintf("<span style='float:left;'>%s</span>", pString)
 				}
 				//paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
