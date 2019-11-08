@@ -101,7 +101,7 @@ func (w *Word) getPureText() string {
 	for _, paragraph := range w.doc.Paragraphs() {
 		var (
 			//段落样式
-			//paragraphStyle string
+			paragraphStyle string
 			//段落自动编号应该呈现的值
 			paragraphSortNumText string
 		)
@@ -113,14 +113,15 @@ func (w *Word) getPureText() string {
 		if paragraph.X().PPr != nil {
 			//段落居中、居右
 			if paragraph.X().PPr.Jc != nil {
-				if paragraph.X().PPr.Jc.ValAttr.String() == "center" {
-					pString = fmt.Sprintf("<center>%s</center>", pString)
-				} else if paragraph.X().PPr.Jc.ValAttr.String() == "right" {
-					pString = fmt.Sprintf("<span style='float:right;'>%s</span>", pString)
-				} else if paragraph.X().PPr.Jc.ValAttr.String() == "left" {
-					pString = fmt.Sprintf("<span style='float:left;'>%s</span>", pString)
-				}
-				//paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
+				//if paragraph.X().PPr.Jc.ValAttr.String() == "center" {
+				//	pString = fmt.Sprintf("<center>%s</center>", pString)
+				//} else if paragraph.X().PPr.Jc.ValAttr.String() == "right" {
+				//	pString = fmt.Sprintf("<span style='float:right;'>%s</span>", pString)
+				//} else if paragraph.X().PPr.Jc.ValAttr.String() == "left" {
+				//	pString = fmt.Sprintf("<span style='float:left;'>%s</span>", pString)
+				//}
+
+				paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
 
 			//段落自动编号样式读取
@@ -183,8 +184,8 @@ func (w *Word) getPureText() string {
 		}
 
 		//写入段落样式
-		//pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
-		pString = fmt.Sprintf("<p>%s</p>", pString)
+		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
+		//pString = fmt.Sprintf("<p>%s</p>", pString)
 
 		//保存内容
 		res.WriteString(pString)
@@ -390,23 +391,27 @@ func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 	wg.Add(len(olePaths))
 
 	//循环数据
+	var mutex sync.Mutex
 	for _, ole := range olePaths {
 		//goroutine 运行
 		go func(word *Word, oleObjPath document.OleObjectPath) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			if _, ok := word.oles[oleObjPath.Rid()]; !ok {
-				//调用解析库解析公式
-				latex := eqn.Convert(oleObjPath.Path())
+			//if _, ok := word.oles[oleObjPath.Rid()]; !ok {
+			//调用解析库解析公式
+			latex := eqn.Convert(oleObjPath.Path())
 
-				//替换$$为[ 或 ]
-				latex = strings.Replace(latex, "$$", "[", 1)
-				latex = strings.Replace(latex, "$$", "]", 1)
+			//替换$$为[ 或 ]
+			latex = strings.Replace(latex, "$$", "[", 1)
+			latex = strings.Replace(latex, "$$", "]", 1)
 
-				//保存数据
-				word.oles[oleObjPath.Rid()] = &latex
-			}
+			//保存数据
+			//map并发问题
+			mutex.Lock()
+			word.oles[oleObjPath.Rid()] = &latex
+			mutex.Unlock()
+			//}
 		}(w, ole)
 	}
 
@@ -421,21 +426,26 @@ func (w *Word) parseImage(images []common.ImageRef) {
 	var wg sync.WaitGroup
 	wg.Add(len(images))
 
+	var mutex sync.Mutex
 	for _, img := range images {
 		//goroutine 运行
 		go func(word *Word, image common.ImageRef) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			if _, ok := word.images[image.RelID()]; !ok {
-				//调用图片上传
-				localFile := image.Path()
-				key := fmt.Sprintf("%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.Format())
+			//if _, ok := word.images[image.RelID()]; !ok {
+			//调用图片上传
+			localFile := image.Path()
+			key := fmt.Sprintf("%s_%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.RelID(), image.Format())
 
-				//上传到七牛
-				uri := utils.UploadFileToQiniu(key, localFile)
-				word.images[image.RelID()] = uri
-			}
+			//上传到七牛
+			uri := utils.UploadFileToQiniu(key, localFile)
+
+			//map并发问题
+			mutex.Lock()
+			word.images[image.RelID()] = uri
+			mutex.Unlock()
+			//}
 		}(w, img)
 	}
 

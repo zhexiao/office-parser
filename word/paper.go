@@ -13,5 +13,6 @@ func ParsePaper(w *Word) *CT_PureWord {
 	pWord := NewCT_PureWord()
 	pWord.WordText = w.getPureText()
 
+	//fmt.Println(pWord.WordText)
 	return pWord
 }
