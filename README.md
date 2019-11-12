@@ -15,7 +15,14 @@ func init() {
 		Zone: "ZoneHuanan",
 		//访问的域名地址
 		Domain: "https://test.com",
+        //路径
+        UploadPrefix : "office_parser",
 	}
+
+    //初始化WMF的配置
+    utils.WmfConfiguration = &utils.CT_WmfCfg{
+        Uri: "http://127.0.0.1:10002/convert",
+    }
 }
 ```
 
