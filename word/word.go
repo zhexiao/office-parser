@@ -31,6 +31,9 @@ type Word struct {
 
 	//公式对象 RID:LATEX 的对应关系
 	oles map[string]*string
+	//无法转换的公式转换成图片
+	olesImages map[string]string
+
 	//图片 RID:七牛地址 的对应关系
 	images map[string]string
 }
@@ -375,8 +378,15 @@ func (w *Word) readImage(images []document.InlineDrawing) string {
 func (w *Word) readOles(ole []document.OleObject) string {
 	var latexStr string
 	for _, ole := range ole {
-		latexPtr := w.oles[ole.OleRid()]
-		latexStr = *latexPtr
+		latexPtr, ok := w.oles[ole.OleRid()]
+		if ok {
+			latexStr = *latexPtr
+		} else {
+			oleImg, ok := w.olesImages[ole.ImagedataRid()]
+			if ok {
+				latexStr = fmt.Sprintf("<img src='%s' style='%s' />", oleImg, *ole.Shape().StyleAttr)
+			}
+		}
 	}
 
 	return latexStr
@@ -385,6 +395,7 @@ func (w *Word) readOles(ole []document.OleObject) string {
 //把ole对象文件转为latex字符串
 func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 	w.oles = make(map[string]*string)
+	w.olesImages = make(map[string]string)
 
 	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
 	var wg sync.WaitGroup
@@ -398,20 +409,28 @@ func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			//if _, ok := word.oles[oleObjPath.Rid()]; !ok {
 			//调用解析库解析公式
 			latex := eqn.Convert(oleObjPath.Path())
+			if latex == "" {
+				//无法解析的公式，转图片
+				wmfObj := w.doc.OleObjectWmfPath[0]
+				imageName := fmt.Sprintf("%s_%s", strconv.Itoa(int(time.Now().UnixNano())), wmfObj.Rid())
+				utils.WmfConvert(wmfObj.Path(), imageName)
 
-			//替换$$为[ 或 ]
-			latex = strings.Replace(latex, "$$", "[", 1)
-			latex = strings.Replace(latex, "$$", "]", 1)
+				//map并发问题
+				mutex.Lock()
+				word.olesImages[wmfObj.Rid()] = fmt.Sprintf("%s/%s/%s.jpg", utils.OfficeParserQiniuCfg.Domain, utils.OfficeParserQiniuCfg.UploadPrefix, imageName)
+				mutex.Unlock()
+			} else {
+				//成功解析的公式，替换$$为[ 或 ]
+				latex = strings.Replace(latex, "$$", "[", 1)
+				latex = strings.Replace(latex, "$$", "]", 1)
 
-			//保存数据
-			//map并发问题
-			mutex.Lock()
-			word.oles[oleObjPath.Rid()] = &latex
-			mutex.Unlock()
-			//}
+				//map并发问题
+				mutex.Lock()
+				word.oles[oleObjPath.Rid()] = &latex
+				mutex.Unlock()
+			}
 		}(w, ole)
 	}
 
@@ -433,7 +452,6 @@ func (w *Word) parseImage(images []common.ImageRef) {
 			// 在函数退出时调用 Done
 			defer wg.Done()
 
-			//if _, ok := word.images[image.RelID()]; !ok {
 			//调用图片上传
 			localFile := image.Path()
 			key := fmt.Sprintf("%s_%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.RelID(), image.Format())
@@ -445,7 +463,6 @@ func (w *Word) parseImage(images []common.ImageRef) {
 			mutex.Lock()
 			word.images[image.RelID()] = uri
 			mutex.Unlock()
-			//}
 		}(w, img)
 	}
 

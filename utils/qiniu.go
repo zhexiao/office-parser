@@ -15,18 +15,18 @@ type Qiniu struct {
 	Bucket    string
 	Zone      string
 
-	Domain string
+	Domain       string
+	UploadPrefix string
 }
 
 var OfficeParserQiniuCfg *Qiniu
-var uploadPrefix = "office_parser"
 
 //文件传输
 func UploadFileToQiniu(key string, localFile string) string {
 	checkCfg()
 
 	//图片地址新增前缀office_parser
-	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
+	pathKey := fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.UploadPrefix, key)
 	ret := OfficeParserQiniuCfg.uploadCloud(pathKey, localFile)
 
 	//返回地址
@@ -38,7 +38,7 @@ func UploadDataToQiniu(key string, data io.Reader, size int64) string {
 	checkCfg()
 
 	//图片地址新增前缀office_parser
-	pathKey := fmt.Sprintf("%s/%s", uploadPrefix, key)
+	pathKey := fmt.Sprintf("%s/%s", OfficeParserQiniuCfg.UploadPrefix, key)
 	ret := OfficeParserQiniuCfg.uploadDataToCloud(pathKey, data, size)
 
 	//返回地址
