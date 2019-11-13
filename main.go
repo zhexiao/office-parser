@@ -11,7 +11,6 @@ import (
 )
 
 func init() {
-
 }
 
 func main() {
@@ -85,7 +84,7 @@ func main() {
 
 func test() {
 	//data := word.ConvertFromFile("./test/question-fill-201903011.docx")
-	data := word.ConvertPaperFromFile("./test/text1.docx")
+	data := word.ConvertPaperFromFile("./test/数学一年级.docx")
 
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
