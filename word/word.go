@@ -216,6 +216,94 @@ func (w *Word) getPureText() string {
 					case 10:
 						paragraphSortNumText = "十、"
 					}
+				} else if numFmt == "chineseCountingThousand" && numText == "%1、" {
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "一、"
+					case 2:
+						paragraphSortNumText = "二、"
+					case 3:
+						paragraphSortNumText = "三、"
+					case 4:
+						paragraphSortNumText = "四、"
+					case 5:
+						paragraphSortNumText = "五、"
+					case 6:
+						paragraphSortNumText = "六、"
+					case 7:
+						paragraphSortNumText = "七、"
+					case 8:
+						paragraphSortNumText = "八、"
+					case 9:
+						paragraphSortNumText = "九、"
+					case 10:
+						paragraphSortNumText = "十、"
+					}
+				} else if numFmt == "chineseCountingThousand" && numText == "(%1)" {
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "(一)"
+					case 2:
+						paragraphSortNumText = "(二)"
+					case 3:
+						paragraphSortNumText = "(三)"
+					case 4:
+						paragraphSortNumText = "(四)"
+					case 5:
+						paragraphSortNumText = "(五)"
+					case 6:
+						paragraphSortNumText = "(六)"
+					case 7:
+						paragraphSortNumText = "(七)"
+					case 8:
+						paragraphSortNumText = "(八)"
+					case 9:
+						paragraphSortNumText = "(九)"
+					case 10:
+						paragraphSortNumText = "(十)"
+					}
+				} else if numFmt == "upperLetter" && numText == "%1." {
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "A."
+					case 2:
+						paragraphSortNumText = "B."
+					case 3:
+						paragraphSortNumText = "C."
+					case 4:
+						paragraphSortNumText = "D."
+					case 5:
+						paragraphSortNumText = "E."
+					case 6:
+						paragraphSortNumText = "F."
+					case 7:
+						paragraphSortNumText = "G."
+					case 8:
+						paragraphSortNumText = "H."
+					}
+				} else if numFmt == "upperRoman" && numText == "%1." {
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "Ⅰ."
+					case 2:
+						paragraphSortNumText = "Ⅱ."
+					case 3:
+						paragraphSortNumText = "Ⅲ."
+					case 4:
+						paragraphSortNumText = "Ⅳ."
+					case 5:
+						paragraphSortNumText = "Ⅴ."
+					case 6:
+						paragraphSortNumText = "Ⅵ."
+					case 7:
+						paragraphSortNumText = "Ⅶ."
+					case 8:
+						paragraphSortNumText = "Ⅷ."
+					case 9:
+						paragraphSortNumText = "Ⅸ."
+					case 10:
+						paragraphSortNumText = "Ⅹ."
+					}
 				} else if numFmt == "decimal" && numText == "%1、" {
 					paragraphSortNumText = fmt.Sprintf("%d、", paragraphSortNum)
 				} else {
