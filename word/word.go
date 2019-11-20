@@ -15,6 +15,18 @@ import (
 	"time"
 )
 
+type abNumILvl struct {
+	ilvl   int64
+	numFmt string
+	text   string
+	start  int64
+}
+
+type abNumData struct {
+	numId int64
+	iLvl  []*abNumILvl
+}
+
 type RowData struct {
 	Content     []string
 	HtmlContent []string
@@ -40,6 +52,10 @@ type Word struct {
 	//图片 RID:七牛地址 的对应关系
 	//images map[string]string
 	images *sync.Map
+
+	//自动序号相关
+	numIdMapAbNumId map[int64]int64
+	numData         []*abNumData
 }
 
 func NewWord() *Word {
@@ -93,6 +109,9 @@ func PaperWord(doc *document.Document) *Word {
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
 
+	//解析自动序号
+	w.parseOrder()
+
 	return w
 }
 
@@ -120,18 +139,11 @@ func (w *Word) getPureText() string {
 		if paragraph.X().PPr != nil {
 			//段落居中、居右
 			if paragraph.X().PPr.Jc != nil {
-				//if paragraph.X().PPr.Jc.ValAttr.String() == "center" {
-				//	pString = fmt.Sprintf("<center>%s</center>", pString)
-				//} else if paragraph.X().PPr.Jc.ValAttr.String() == "right" {
-				//	pString = fmt.Sprintf("<span style='float:right;'>%s</span>", pString)
-				//} else if paragraph.X().PPr.Jc.ValAttr.String() == "left" {
-				//	pString = fmt.Sprintf("<span style='float:left;'>%s</span>", pString)
-				//}
-
 				paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
 
 			//段落自动编号样式读取
+			//参考文档：http://c-rex.net/projects/samples/ooxml/e1/Part4/OOXML_P4_DOCX_Numbering_topic_ID0EN6IU.html
 			if paragraph.X().PPr.NumPr != nil {
 				//初始化没有编号ID
 				if paragraph.X().PPr.NumPr.NumId.ValAttr != paragraphSortNumId {
@@ -150,9 +162,15 @@ func (w *Word) getPureText() string {
 			}
 
 			if paragraphSortNum != 0 {
-				switch paragraphSortNumId {
-				//圆圈编号
-				case 1000:
+				ivlData := w.readAbNumData(paragraphSortNumId, 0)
+				numFmt := ivlData.numFmt
+				numText := ivlData.text
+
+				if numFmt == "decimal" && numText == "%1." {
+					paragraphSortNumText = fmt.Sprintf("%d.", paragraphSortNum)
+				} else if numFmt == "decimal" && numText == "(%1)" {
+					paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
+				} else if numFmt == "decimalEnclosedCircle" && numText == "%1" {
 					switch paragraphSortNum {
 					case 1:
 						paragraphSortNumText = "①"
@@ -175,14 +193,34 @@ func (w *Word) getPureText() string {
 					case 10:
 						paragraphSortNumText = "⑩"
 					}
-				//1. 2. 编号
-				case 1100:
+				} else if numFmt == "japaneseCounting" && numText == "%1、" {
+					switch paragraphSortNum {
+					case 1:
+						paragraphSortNumText = "一、"
+					case 2:
+						paragraphSortNumText = "二、"
+					case 3:
+						paragraphSortNumText = "三、"
+					case 4:
+						paragraphSortNumText = "四、"
+					case 5:
+						paragraphSortNumText = "五、"
+					case 6:
+						paragraphSortNumText = "六、"
+					case 7:
+						paragraphSortNumText = "七、"
+					case 8:
+						paragraphSortNumText = "八、"
+					case 9:
+						paragraphSortNumText = "九、"
+					case 10:
+						paragraphSortNumText = "十、"
+					}
+				} else if numFmt == "decimal" && numText == "%1、" {
+					paragraphSortNumText = fmt.Sprintf("%d、", paragraphSortNum)
+				} else {
+					log.Printf("暂时不支持的自动序号,numFmt=%s,text=%s", numFmt, numText)
 					paragraphSortNumText = fmt.Sprintf("%d.", paragraphSortNum)
-				//(1) (2) 编号
-				case 1200:
-					paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
-				default:
-					paragraphSortNumText = fmt.Sprintf("(%d)", paragraphSortNum)
 				}
 
 				//写入自动编号
@@ -192,7 +230,6 @@ func (w *Word) getPureText() string {
 
 		//写入段落样式
 		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
-		//pString = fmt.Sprintf("<p>%s</p>", pString)
 
 		//保存内容
 		res.WriteString(pString)
@@ -477,4 +514,76 @@ func (w *Word) parseImage(images []common.ImageRef) {
 	}
 
 	wg.Wait()
+}
+
+//执行自动序号数据读取
+func (w *Word) parseOrder() {
+	w.parseOrderNum()
+	w.parseNumIdMap()
+}
+
+//读取序号数据
+func (w *Word) parseOrderNum() {
+	for _, df := range w.doc.Numbering.Definitions() {
+		abData := &abNumData{}
+		abData.numId = df.AbstractNumberID()
+		for _, lv := range df.X().Lvl {
+			abData.iLvl = append(abData.iLvl, &abNumILvl{
+				ilvl:   lv.IlvlAttr,
+				numFmt: lv.NumFmt.ValAttr.String(),
+				text:   *lv.LvlText.ValAttr,
+				start:  lv.Start.ValAttr,
+			})
+		}
+
+		w.numData = append(w.numData, abData)
+	}
+}
+
+//numId与abstractNumId的映射关系
+func (w *Word) parseNumIdMap() {
+	numIdMapAbNumId := make(map[int64]int64)
+	for _, nu := range w.doc.Numbering.X().Num {
+		numIdMapAbNumId[nu.NumIdAttr] = nu.AbstractNumId.ValAttr
+	}
+
+	w.numIdMapAbNumId = numIdMapAbNumId
+}
+
+//读取自动序号的数据
+func (w *Word) readAbNumData(numId int64, ilvl int64) *abNumILvl {
+	abNumId, ok := w.numIdMapAbNumId[numId]
+	if !ok {
+		log.Panicf("自动序号解析失败，找不到numId=%d", numId)
+	}
+
+	//读取 abstractNum 数据
+	var tmpAbData *abNumData
+	for _, abData := range w.numData {
+		abDataNumId := abData.numId
+
+		if abDataNumId == abNumId {
+			tmpAbData = abData
+		}
+	}
+
+	if tmpAbData == nil {
+		log.Panicf("找不到AbNum实例数据，abNumId=%d", abNumId)
+	}
+
+	//读取 lvl 数据
+	var tmpAbLvl *abNumILvl
+	for _, abLvl := range tmpAbData.iLvl {
+		abLvlVal := abLvl.ilvl
+
+		if abLvlVal == ilvl {
+			tmpAbLvl = abLvl
+		}
+	}
+
+	if tmpAbLvl == nil {
+		log.Panicf("找不到ilvl实例数据，ilvl=%d", ilvl)
+	}
+
+	return tmpAbLvl
 }
