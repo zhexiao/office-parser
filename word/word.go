@@ -9,6 +9,7 @@ import (
 	"github.com/zhexiao/office-parser/utils"
 	"io"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -117,6 +118,7 @@ func PaperWord(doc *document.Document) *Word {
 
 //得到纯解析的word文本数据
 func (w *Word) getPureText() string {
+	nbspReg := regexp.MustCompile(`\(([&nbsp;]*?)\)`)
 	res := bytes.Buffer{}
 
 	//p数据，段落自动编号当前值
@@ -192,6 +194,9 @@ func (w *Word) getPureText() string {
 
 		//写入段落样式
 		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
+
+		//把字符串里面的(), (&nbsp;), (&nbsp;&nbsp;), (&nbsp;&nbsp;&nbsp;)等全部换成4个&nbsp;
+		pString = nbspReg.ReplaceAllString(pString, "(&nbsp;&nbsp;&nbsp;&nbsp;)")
 
 		//保存内容
 		res.WriteString(pString)
