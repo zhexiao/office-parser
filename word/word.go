@@ -244,6 +244,19 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			//parser_underline_wave 波浪线
 			//parser_em_zhuozhong	着重符
 			if run.X().RPr != nil {
+				//查看样式数据
+				//fmt.Printf("%#v \n", run.X().RPr)
+
+				//删除线
+				if run.X().RPr.Strike != nil {
+					text = fmt.Sprintf("<del>%s</del>", text)
+				}
+
+				//背景色
+				if run.X().RPr.Highlight != nil {
+					text = fmt.Sprintf("<span style='display:inline-block;background-color:%s;'>%s</span>", run.X().RPr.Highlight.ValAttr.String(), text)
+				}
+
 				//加粗
 				if run.X().RPr.B != nil {
 					text = fmt.Sprintf("<b>%s</b>", text)
