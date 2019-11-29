@@ -9,7 +9,7 @@ import (
 	"github.com/zhexiao/office-parser/utils"
 	"io"
 	"log"
-	"regexp"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -88,12 +88,10 @@ func QuestionWord(doc *document.Document) *Word {
 	//得到doc指针数据
 	w := NewWord()
 	w.doc = doc
+
 	//解析公式和图片
 	w.parseOle(w.doc.OleObjectPaths)
 	w.parseImage(w.doc.Images)
-
-	//todo 得到文档的所有公式WMF图片一次性解析
-	//fmt.Println(w.doc.OleObjectWmfPath)
 
 	//读取table数据
 	w.getTableData()
@@ -118,7 +116,7 @@ func PaperWord(doc *document.Document) *Word {
 
 //得到纯解析的word文本数据
 func (w *Word) getPureText() string {
-	nbspReg := regexp.MustCompile(`\(([&nbsp;]*?)\)`)
+	//nbspReg := regexp.MustCompile(`\(([&nbsp;]*?)\)`)
 	res := bytes.Buffer{}
 
 	//p数据，段落自动编号当前值
@@ -139,8 +137,15 @@ func (w *Word) getPureText() string {
 
 		//读取段落样式
 		if paragraph.X().PPr != nil {
+			//fmt.Println(pString)
+			//fmt.Printf("%#v \n", paragraph.X().PPr.Ind)
+			//fmt.Println("====================================")
+
 			//段落居中、居右
 			if paragraph.X().PPr.Jc != nil {
+				//fmt.Println(pString)
+				//fmt.Printf("%#v \n", paragraph.X().PPr.Jc)
+				//fmt.Println("====================================")
 				paragraphStyle = fmt.Sprintf(" align='%s' ", paragraph.X().PPr.Jc.ValAttr.String())
 			}
 
@@ -190,13 +195,29 @@ func (w *Word) getPureText() string {
 				//写入自动编号
 				pString = fmt.Sprintf("%s %s", paragraphSortNumText, pString)
 			}
+
+			//段落缩进
+			//https://docs.microsoft.com/zh-cn/dotnet/api/documentformat.openxml.wordprocessing.indentation?view=openxml-2.8.1
+			if paragraph.X().PPr.Ind != nil {
+				if paragraph.X().PPr.Ind.FirstLineCharsAttr != nil {
+					indentNum := int(math.Round(float64(*(paragraph.X().PPr.Ind.FirstLineCharsAttr)) / 50))
+					indentNbsp := strings.Repeat("&nbsp;", indentNum)
+
+					//fmt.Println(paragraph.X().PPr.Ind.FirstLineCharsAttr)
+					pString = fmt.Sprintf("%s%s", indentNbsp, pString)
+				}
+
+				//fmt.Println(pString)
+				//fmt.Printf("%#v \n", *paragraph.X().PPr.Ind.FirstLineCharsAttr)
+				//fmt.Println("====================================")
+			}
 		}
 
 		//写入段落样式
 		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
 
 		//把字符串里面的(), (&nbsp;), (&nbsp;&nbsp;), (&nbsp;&nbsp;&nbsp;)等全部换成4个&nbsp;
-		pString = nbspReg.ReplaceAllString(pString, "(&nbsp;&nbsp;&nbsp;&nbsp;)")
+		//pString = nbspReg.ReplaceAllString(pString, "(&nbsp;&nbsp;&nbsp;&nbsp;)")
 
 		//保存内容
 		res.WriteString(pString)
@@ -228,6 +249,14 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			} else {
 				for idx, rt := range run.Ruby().Rt {
 					rubyText := run.Ruby().RubyBase[idx]
+
+					if run.X().RPr != nil {
+						//加粗
+						if run.X().RPr.B != nil {
+							rubyText = fmt.Sprintf("<b>%s</b>", rubyText)
+						}
+					}
+
 					text = fmt.Sprintf("<ruby>%s<rt>%s</rt></ruby>", rubyText, rt)
 				}
 			}
@@ -238,14 +267,18 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			//把空格替换成&nbsp;
 			if strings.Contains(text, " ") {
 				text = strings.Replace(text, " ", "&nbsp;", -1)
+				//text = strings.Replace(text, " ", "<span style='display:inline-block;width:10.5px;'></span>", -1)
 			}
 
 			//检查文本样式
 			//parser_underline_wave 波浪线
+			//parser_underline_wavyDouble 双波浪线
 			//parser_em_zhuozhong	着重符
 			if run.X().RPr != nil {
 				//查看样式数据
-				//fmt.Printf("%#v \n", run.X().RPr)
+				//fmt.Println(text)
+				//fmt.Printf("%#v \n",run.X().RPr)
+				//fmt.Println("====================================")
 
 				//删除线
 				if run.X().RPr.Strike != nil {
@@ -264,11 +297,16 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 
 				//下划线、波浪线
 				if run.X().RPr.U != nil {
-					if run.X().RPr.U.ValAttr.String() == "single" {
+					uVal := run.X().RPr.U.ValAttr.String()
+
+					switch uVal {
+					case "single":
 						//下划线
-						text = fmt.Sprintf("<u>%s</u>", text)
-					} else {
-						//波浪线
+						text = fmt.Sprintf("<span style='border-bottom:1px solid black;'>%s</span>", text)
+					case "double":
+						//双下划线
+						text = fmt.Sprintf("<span style='border-bottom:3px double black;'>%s</span>", text)
+					default:
 						text = fmt.Sprintf("<span class='parser_underline_%s'>%s</span>", run.X().RPr.U.ValAttr.String(), text)
 					}
 				}
@@ -280,7 +318,7 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 
 				//着重符号
 				if run.X().RPr.Em != nil {
-					text = fmt.Sprintf("<span class='em_zhuozhong'>%s</span>", text)
+					text = fmt.Sprintf("<span class='parser_em_zhuozhong'>%s</span>", text)
 				}
 
 				//颜色
