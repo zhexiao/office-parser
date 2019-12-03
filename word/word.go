@@ -536,8 +536,10 @@ func (w *Word) parseImage(images []common.ImageRef) {
 
 //执行自动序号数据读取
 func (w *Word) parseOrder() {
-	w.parseOrderNum()
-	w.parseNumIdMap()
+	if w.doc.Numbering.X() != nil {
+		w.parseOrderNum()
+		w.parseNumIdMap()
+	}
 }
 
 //读取序号数据
