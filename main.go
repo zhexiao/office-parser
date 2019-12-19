@@ -3,85 +3,143 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/urfave/cli"
-	"github.com/zhexiao/office-parser/excel"
+	"github.com/go-yaml/yaml"
+	"github.com/zhexiao/office-parser/utils"
 	"github.com/zhexiao/office-parser/word"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
 )
 
-func init() {
-
-}
-
-func main() {
-	var (
-		filepath string
-		eduType  string
-		data     interface{}
-	)
-
-	app := cli.NewApp()
-	app.Name = "Office Parser"
-	app.Usage = "Convert Word、Excel to json data"
-	app.Version = "2.0"
-	app.EnableBashCompletion = true
-
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:        "filepath, f",
-			Usage:       "filepath",
-			Destination: &filepath,
-		},
-		cli.StringFlag{
-			Name:        "eduType, t",
-			Usage:       "The type of the document belong to!",
-			Destination: &eduType,
-		},
+type CT_YamlSettings struct {
+	Qiniu struct {
+		AccessKey    string `yaml:"accessKey"`
+		SecretKey    string `yaml:"secretKey"`
+		Bucket       string `yaml:"bucket"`
+		Zone         string `yaml:"zone"`
+		Domain       string `yaml:"domain"`
+		UploadPrefix string `yaml:"uploadPrefix"`
 	}
 
-	app.Action = func(c *cli.Context) error {
-		if filepath == "" {
-			log.Panic("缺少必要的文件路径")
-		}
+	Wmf struct {
+		Uri string `yaml:"uri"`
+	}
+}
 
-		switch eduType {
-		case "question":
-			data = word.ConvertFromFile(filepath)
-		case "word":
-			data = word.ConvertPaperFromFile(filepath)
-		case "paper":
-			data = excel.ConvertFromFile(filepath, "paper")
-		case "book":
-			data = excel.ConvertFromFile(filepath, "book")
-		case "outline":
-			data = excel.ConvertFromFile(filepath, "outline")
-		case "cognition_map":
-			data = excel.ConvertFromFile(filepath, "cognition_map")
-		case "cognition_sp":
-			data = excel.ConvertFromFile(filepath, "cognition_sp")
-		default:
-			log.Panicf("不支持的解析类型：%s", eduType)
-		}
+func readSettings() *CT_YamlSettings {
+	//读取配置文件
+	yamlSettings := new(CT_YamlSettings)
 
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			log.Panicf("json转换失败: %s", err)
-		}
-
-		saveIntoFile(string(jsonBytes))
+	yamlFile, err := ioutil.ReadFile("settings.yaml")
+	if err != nil {
 		return nil
 	}
 
-	//执行命令行
-	err := app.Run(os.Args)
+	err = yaml.Unmarshal(yamlFile, yamlSettings)
 	if err != nil {
-		log.Panic(err)
+		return nil
 	}
 
+	return yamlSettings
+}
+
+func init() {
+	//读取配置文件
+	yamlSettings := readSettings()
+
+	//如果默认没有配置，则可以作为第三方库支持用户自定义配置
+	if yamlSettings != nil {
+		//初始化七牛的配置
+		utils.OfficeParserQiniuCfg = &utils.Qiniu{
+			//七牛key
+			AccessKey: yamlSettings.Qiniu.AccessKey,
+			//七牛secret
+			SecretKey: yamlSettings.Qiniu.SecretKey,
+			//七牛存储的bucket
+			Bucket: yamlSettings.Qiniu.Bucket,
+			//所属区域
+			Zone: yamlSettings.Qiniu.Zone,
+			//访问的域名地址
+			Domain: yamlSettings.Qiniu.Domain,
+			//路径
+			UploadPrefix: yamlSettings.Qiniu.UploadPrefix,
+		}
+
+		//初始化WMF的配置
+		utils.WmfConfiguration = &utils.CT_WmfCfg{
+			Uri: yamlSettings.Wmf.Uri,
+		}
+	}
+}
+
+func main() {
+	//var (
+	//	filepath string
+	//	eduType  string
+	//	data     interface{}
+	//)
+	//
+	//app := cli.NewApp()
+	//app.Name = "Office Parser"
+	//app.Usage = "Convert Word、Excel to json data"
+	//app.Version = "2.0"
+	//app.EnableBashCompletion = true
+	//
+	//app.Flags = []cli.Flag{
+	//	cli.StringFlag{
+	//		Name:        "filepath, f",
+	//		Usage:       "filepath",
+	//		Destination: &filepath,
+	//	},
+	//	cli.StringFlag{
+	//		Name:        "eduType, t",
+	//		Usage:       "The type of the document belong to!",
+	//		Destination: &eduType,
+	//	},
+	//}
+	//
+	//app.Action = func(c *cli.Context) error {
+	//	if filepath == "" {
+	//		log.Panic("缺少必要的文件路径")
+	//	}
+	//
+	//	switch eduType {
+	//	case "question":
+	//		data = word.ConvertFromFile(filepath)
+	//	case "word":
+	//		data = word.ConvertPaperFromFile(filepath)
+	//	case "paper":
+	//		data = excel.ConvertFromFile(filepath, "paper")
+	//	case "book":
+	//		data = excel.ConvertFromFile(filepath, "book")
+	//	case "outline":
+	//		data = excel.ConvertFromFile(filepath, "outline")
+	//	case "cognition_map":
+	//		data = excel.ConvertFromFile(filepath, "cognition_map")
+	//	case "cognition_sp":
+	//		data = excel.ConvertFromFile(filepath, "cognition_sp")
+	//	default:
+	//		log.Panicf("不支持的解析类型：%s", eduType)
+	//	}
+	//
+	//	jsonBytes, err := json.Marshal(data)
+	//	if err != nil {
+	//		log.Panicf("json转换失败: %s", err)
+	//	}
+	//
+	//	saveIntoFile(string(jsonBytes))
+	//	return nil
+	//}
+	//
+	////执行命令行
+	//err := app.Run(os.Args)
+	//if err != nil {
+	//	log.Panic(err)
+	//}
+
 	//注释上面，运行测试
-	//test()
+	test()
 }
 
 func test() {

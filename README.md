@@ -1,7 +1,13 @@
 # office-parser
-Word、Excel数据解析。
+把教育信息化体系中的Word试题，Excel试卷、知识点等数据解析成json内容。
 
 # 配置文件
+1. 如果独立使用，则可以创建settings.yaml自定义配置
+```
+$ cp settings.yaml.example settings.yaml
+```
+
+2. 如果作为第三方库使用，则可以由用户通过以下方法配置
 ```
 func init() {
 	utils.OfficeParserQiniuCfg = &utils.Qiniu{

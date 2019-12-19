@@ -1,0 +1,11 @@
+qiniu:
+  accessKey: rfHlsZIoIA111111111111111111111111
+  secretKey: WxvytzvTSP22222222222222
+  bucket: tccnu-ups
+  zone: ZoneHuanan
+  domain: https://tccnu-ups.abc.com
+  uploadPrefix: office_parser
+
+wmf:
+  uri: http://192.168.71.138:10002/convert
+
