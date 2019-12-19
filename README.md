@@ -8,7 +8,7 @@ $ cp settings.yaml.example settings.yaml
 ```
 
 2. 如果作为第三方库使用，则可以由用户通过以下方法配置
-```
+```bash
 func init() {
 	utils.OfficeParserQiniuCfg = &utils.Qiniu{
 		//七牛key
@@ -21,14 +21,14 @@ func init() {
 		Zone: "ZoneHuanan",
 		//访问的域名地址
 		Domain: "https://test.com",
-        //路径
-        UploadPrefix : "office_parser",
+		//路径
+		UploadPrefix : "office_parser",
 	}
 
-    //初始化WMF的配置
-    utils.WmfConfiguration = &utils.CT_WmfCfg{
-        Uri: "http://127.0.0.1:10002/convert",
-    }
+	//初始化WMF的配置
+	utils.WmfConfiguration = &utils.CT_WmfCfg{
+		Uri: "http://127.0.0.1:10002/convert",
+	}
 }
 ```
 
