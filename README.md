@@ -5,7 +5,7 @@
 1. Go >= 1.13
 2. 开启go mod
 ```
-根据实际情况填写路径
+# 根据实际情况填写路径
 $ go env -w GOPATH=/goproj
 $ go env -w GOBIN=/goproj/bin
 $ go env -w GO111MODULE=on
