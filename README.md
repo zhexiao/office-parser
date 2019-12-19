@@ -1,6 +1,31 @@
 # office-parser
 把教育信息化体系中的Word试题，Excel试卷、知识点等数据解析成json内容。
 
+#运行
+1. Go >= 1.13
+2. 开启go mod
+```
+根据实际情况填写路径
+$ go env -w GOPATH=/goproj
+$ go env -w GOBIN=/goproj/bin
+$ go env -w GO111MODULE=on
+$ go env -w GOPROXY=https://goproxy.cn,direct 
+```
+
+#### 拉库
+```
+$ go mod download
+```
+
+#### 运行测试
+支持的类型：word、paper、question、book、outline、cognition_map、cognition_sp
+```
+$ go run main.go -h
+
+$ go run main.go -t word -f ./test/ywgs.docx 
+$ go run main.go -t book -f ./test/book.xlsx 
+```
+
 # 配置文件
 1. 如果独立使用，则可以创建settings.yaml自定义配置
 ```
@@ -32,18 +57,4 @@ func init() {
 }
 ```
 
-# 测试
-支持的类型：
-1. book
-2. paper
-3. outline
-4. cognition_map
-5. cognition_sp
-6. question
 
-运行
-```
-$ go run main.go -h
-
-$ go run main.go -f ./test/book.xlsx -t book
-```
