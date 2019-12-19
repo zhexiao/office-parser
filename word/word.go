@@ -323,7 +323,12 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 
 				//颜色
 				if run.X().RPr.Color != nil {
-					text = fmt.Sprintf("<span style='color:#%s'>%s</span>", run.X().RPr.Color.ValAttr.String(), text)
+					colorVal := run.X().RPr.Color.ValAttr.String()
+
+					//todo 默认不处理黑色背景，word组卷不希望出现
+					if colorVal != "000" && colorVal != "000000" {
+						text = fmt.Sprintf("<span style='color:#%s'>%s</span>", colorVal, text)
+					}
 				}
 
 				//上标，下标
