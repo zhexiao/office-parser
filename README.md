@@ -1,7 +1,7 @@
 # office-parser
 把教育信息化体系中的Word试题，Excel试卷、知识点等数据解析成json内容。
 
-#运行
+# 运行
 1. Go >= 1.13
 2. 开启go mod
 ```
