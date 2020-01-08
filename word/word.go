@@ -491,8 +491,8 @@ func (w *Word) parseOle(olePaths []document.OleObjectPath) {
 				//mutex.Unlock()
 			} else {
 				//成功解析的公式，替换$$为[ 或 ]
-				latex = strings.Replace(latex, "$$", "[", 1)
-				latex = strings.Replace(latex, "$$", "]", 1)
+				latex = strings.Replace(latex, "$$", "\\[", 1)
+				latex = strings.Replace(latex, "$$", "\\]", 1)
 				w.oles.Store(oleObjPath.Rid(), &latex)
 
 				//map并发问题
