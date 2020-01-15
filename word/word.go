@@ -62,18 +62,8 @@ func NewCT_Word() *CT_Word {
 	return &CT_Word{}
 }
 
-func (w *CT_Word) read(fileByte []byte) error {
-	doc, err := document.Read(bytes.NewReader(fileByte), int64(len(fileByte)))
-	if err != nil {
-		return bases.NewOpError(bases.LibError, err.Error())
-	}
-
-	w.doc = doc
-	return nil
-}
-
 //解析整个word数据
-func (w *CT_Word) getWordData() (string, error) {
+func (w *CT_Word) GetWordData() (string, error) {
 	//解析公式和图片
 	w.parseOle()
 	w.parseImage()
@@ -91,7 +81,7 @@ func (w *CT_Word) getWordData() (string, error) {
 }
 
 //解析word表格数据
-func (w *CT_Word) getWordTableData() ([]*CT_TableData, error) {
+func (w *CT_Word) GetWordTableData() ([]*CT_TableData, error) {
 	//解析公式和图片
 	w.parseOle()
 	w.parseImage()
@@ -100,6 +90,17 @@ func (w *CT_Word) getWordTableData() ([]*CT_TableData, error) {
 	w.getTableData()
 
 	return w.Tables, nil
+}
+
+//读取数据
+func (w *CT_Word) read(fileByte []byte) error {
+	doc, err := document.Read(bytes.NewReader(fileByte), int64(len(fileByte)))
+	if err != nil {
+		return bases.NewOpError(bases.LibError, err.Error())
+	}
+
+	w.doc = doc
+	return nil
 }
 
 //把ole对象文件转为latex字符串

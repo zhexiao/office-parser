@@ -98,7 +98,7 @@ func ParseQuestion(fileBytes []byte) (*Question, error) {
 		return nil, bases.NewOpError(bases.NormalError, err.Error())
 	}
 
-	tableData, err := ctWord.getWordTableData()
+	tableData, err := ctWord.GetWordTableData()
 	if err != nil {
 		return nil, bases.NewOpError(bases.NormalError, err.Error())
 	}

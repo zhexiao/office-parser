@@ -20,7 +20,7 @@ func ParsePaper(fileBytes []byte) (*CT_PureWord, error) {
 		return nil, bases.NewOpError(bases.NormalError, err.Error())
 	}
 
-	data, err := ctWord.getWordData()
+	data, err := ctWord.GetWordData()
 	if err != nil {
 		return nil, bases.NewOpError(bases.NormalError, err.Error())
 	}
