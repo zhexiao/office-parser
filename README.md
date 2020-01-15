@@ -1,5 +1,8 @@
 # office-parser
 把教育信息化体系中的Word试题，Excel试卷、知识点等数据解析成json内容。
+[![Build Status](https://travis-ci.org/zhexiao/office-parser.svg?branch=master)](https://travis-ci.org/zhexiao/office-parser)
+[![codecov](https://codecov.io/gh/zhexiao/office-parser/branch/master/graph/badge.svg)](https://codecov.io/gh/zhexiao/office-parser)
+![go](https://img.shields.io/badge/go->%3D1.13-blue)
 
 # 运行
 1. Go >= 1.13
