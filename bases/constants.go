@@ -1,4 +1,4 @@
-package utils
+package bases
 
 //基本类型
 type BasicType string

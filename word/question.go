@@ -1,8 +1,8 @@
 package word
 
 import (
-	"github.com/zhexiao/office-parser/utils"
-	"log"
+	"fmt"
+	"github.com/zhexiao/office-parser/bases"
 	"strconv"
 	"strings"
 )
@@ -90,41 +90,54 @@ func NewQuestion() *Question {
 }
 
 //把word里面的试题数据解析出来
-func ParseQuestion(w *Word) *Question {
-	q := NewQuestion()
+func ParseQuestion(fileBytes []byte) (*Question, error) {
+	ctWord := NewCT_Word()
 
-	for idx, table := range w.Tables {
+	err := ctWord.read(fileBytes)
+	if err != nil {
+		return nil, bases.NewOpError(bases.NormalError, err.Error())
+	}
+
+	tableData, err := ctWord.getWordTableData()
+	if err != nil {
+		return nil, bases.NewOpError(bases.NormalError, err.Error())
+	}
+
+	//解析试题
+	q := NewQuestion()
+	for idx, table := range tableData {
 		//读取基本类型
 		firstRow := table.Rows[0]
-		basicType := utils.BasicType(
+		basicType := bases.BasicType(
 			strings.Trim(firstRow.Content[0], " ")).Val()
 
 		//基本类型，如果是选择题，则区分单选和多选
 		if basicType == "XZT" {
 			xztType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Panic("选择题 类型转换失败")
+				return nil, bases.NewOpError(bases.NormalError, "选择题 类型转换失败")
 			}
+
 			switch xztType {
 			case 1:
-				basicType = utils.BasicType("单选题").Val()
+				basicType = bases.BasicType("单选题").Val()
 			case 2:
-				basicType = utils.BasicType("多选题").Val()
+				basicType = bases.BasicType("多选题").Val()
 			default:
-				log.Panicf("选择题 类型数据有错误")
+				return nil, bases.NewOpError(bases.NormalError, "选择题 类型数据有错误")
 			}
 		} else if basicType == "JD" {
 			jdType, err := strconv.Atoi(firstRow.Content[2])
 			if err != nil {
-				log.Panic("解答 类型转换失败")
+				return nil, bases.NewOpError(bases.NormalError, "解答 类型转换失败")
 			}
 			switch jdType {
 			case 5:
-				basicType = utils.BasicType("解答题").Val()
+				basicType = bases.BasicType("解答题").Val()
 			case 6:
-				basicType = utils.BasicType("作文题").Val()
+				basicType = bases.BasicType("作文题").Val()
 			default:
-				log.Panicf("解答 类型数据有错误")
+				return nil, bases.NewOpError(bases.NormalError, "解答 类型数据有错误")
 			}
 		}
 
@@ -136,16 +149,18 @@ func ParseQuestion(w *Word) *Question {
 			if basicType == "TZT" {
 				tztType, err := strconv.Atoi(firstRow.Content[2])
 				if err != nil {
-					log.Panic("题组题 类型转换失败")
+					return nil, bases.NewOpError(bases.NormalError, "题组题 类型转换失败")
 				}
 
-				q.StructureString = utils.StructuringString(tztType).Val()
+				q.StructureString = bases.StructuringString(tztType).Val()
 			} else {
-				q.StructureString = utils.StructuringString(1).Val()
+				q.StructureString = bases.StructuringString(1).Val()
 			}
 
 			//解析表单
-			q.parseTable(table)
+			if err := q.parseTable(table); err != nil {
+				return nil, err
+			}
 			//	后面的子题
 		} else {
 			if q.BasicType == "TZT" {
@@ -153,7 +168,9 @@ func ParseQuestion(w *Word) *Question {
 				childQuestion.BasicType = basicType
 
 				//解析表单
-				childQuestion.parseTable(table)
+				if err := childQuestion.parseTable(table); err != nil {
+					return nil, err
+				}
 
 				//一些基本属性继承于母题
 				childQuestion.ResUsage = q.ResUsage
@@ -169,10 +186,10 @@ func ParseQuestion(w *Word) *Question {
 		}
 	}
 
-	return q
+	return q, nil
 }
 
-func (q *Question) parseTable(t *TableData) {
+func (q *Question) parseTable(t *CT_TableData) error {
 	//基础题型数据也插入数组中
 	q.QBasicType = append(q.QBasicType, map[string]string{
 		"type": q.BasicType,
@@ -182,14 +199,18 @@ func (q *Question) parseTable(t *TableData) {
 	q.SourceType = 1
 
 	//解析基础数据
-	q.parseMeta(t)
+	if err := q.parseMeta(t); err != nil {
+		return err
+	}
 
 	//解析附加属性
 	q.parseAddon(t)
+
+	return nil
 }
 
 //试题基础属性
-func (q *Question) parseMeta(t *TableData) {
+func (q *Question) parseMeta(t *CT_TableData) error {
 	for _, row := range t.Rows {
 		title := strings.Trim(row.Content[0], " ")
 
@@ -197,14 +218,14 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "应用类型"):
 			resUsage, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("应用类型 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("应用类型 解析失败 %s", err))
 			}
 
-			q.ResUsage = utils.ResUsage(resUsage).Val()
+			q.ResUsage = bases.ResUsage(resUsage).Val()
 		case strings.Contains(title, "题库年度"):
 			year, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("题库年度 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("题库年度 解析失败 %s", err))
 			}
 
 			q.Year = year
@@ -212,43 +233,32 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "试题描述类型"):
 			labelString, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("试题描述类型 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("试题描述类型 解析失败 %s", err))
 			}
 
-			q.LabelString = utils.QuestionLabelString(labelString).Val()
+			q.LabelString = bases.QuestionLabelString(labelString).Val()
 			q.QLabelString = append(q.QLabelString, map[string]string{
 				"label": q.LabelString,
 			})
 		case strings.Contains(title, "适用年级"):
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("试用年级 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("试用年级 解析失败 %s", err))
 			}
 
 			q.Grade = grade
 		case strings.Contains(title, "学科题型"):
 			questionAppType, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("学科题型 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("学科题型 解析失败 %s", err))
 			}
 
 			q.QuestionAppType = questionAppType
 		case strings.Contains(title, "常考题"):
 			oftenTest, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("常考题 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("常考题 解析失败 %s", err))
 			}
-
-			////选择题没有自动批改，填空等题型才有，废弃
-			//var autoGrade int
-			//if len(row.Content) >= 4 {
-			//	autoGrade, err = strconv.Atoi(row.Content[4])
-			//	if err != nil {
-			//		log.Panicf("自动批改 解析失败 %s", err)
-			//	}
-			//} else {
-			//	autoGrade = 0
-			//}
 
 			q.OftenTest = oftenTest
 		case strings.Contains(title, "试题备注"):
@@ -256,12 +266,12 @@ func (q *Question) parseMeta(t *TableData) {
 		case strings.Contains(title, "解题时间"):
 			estimatedTime, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("解题时间 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("解题时间 解析失败 %s", err))
 			}
 
 			diffDisplay, err := strconv.ParseFloat(row.Content[3], 2)
 			if err != nil {
-				log.Panicf("困难度 解析失败 %s", err)
+				return bases.NewOpError(bases.NormalError, fmt.Sprintf("困难度 解析失败 %s", err))
 			}
 
 			identify := row.Content[5]
@@ -270,7 +280,7 @@ func (q *Question) parseMeta(t *TableData) {
 			} else {
 				identifyDisplay, err := strconv.ParseFloat(identify, 2)
 				if err != nil {
-					log.Panicf("鉴别度 解析失败 %s", err)
+					return bases.NewOpError(bases.NormalError, fmt.Sprintf("鉴别度 解析失败 %s", err))
 				}
 				q.IdentifyDisplay = identifyDisplay
 				q.Identify = int(identifyDisplay * 100)
@@ -282,7 +292,7 @@ func (q *Question) parseMeta(t *TableData) {
 			} else {
 				guessDisplay, err := strconv.ParseFloat(guess, 2)
 				if err != nil {
-					log.Panicf("猜度 解析失败 %s", err)
+					return bases.NewOpError(bases.NormalError, fmt.Sprintf("猜度 解析失败 %s", err))
 				}
 				q.GuessDisplay = guessDisplay
 				q.Guess = int(guessDisplay * 100)
@@ -299,10 +309,12 @@ func (q *Question) parseMeta(t *TableData) {
 			q.Image = row.Content[1]
 		}
 	}
+
+	return nil
 }
 
 //试题附加属性
-func (q *Question) parseAddon(t *TableData) {
+func (q *Question) parseAddon(t *CT_TableData) {
 	var (
 		answerTable bool
 		hintTable   bool
@@ -342,9 +354,9 @@ func (q *Question) parseAddon(t *TableData) {
 }
 
 //试题普适性知识点
-func (q *Question) parseCognitionMap(row *RowData) {
+func (q *Question) parseCognitionMap(row *CT_RowData) {
 	content := row.Content[1]
-	numList := utils.ReadNum(content)
+	numList := bases.ReadNum(content)
 
 	for _, num := range numList {
 		numObj := QuestionCognitionMap{
@@ -356,9 +368,9 @@ func (q *Question) parseCognitionMap(row *RowData) {
 }
 
 //试题目录
-func (q *Question) parseOutline(row *RowData) {
+func (q *Question) parseOutline(row *CT_RowData) {
 	content := row.Content[1]
-	numList := utils.ReadNum(content)
+	numList := bases.ReadNum(content)
 
 	for _, num := range numList {
 		numObj := QuestionOutline{
@@ -370,9 +382,9 @@ func (q *Question) parseOutline(row *RowData) {
 }
 
 //试题特异性知识点
-func (q *Question) parseCognitionSp(row *RowData) {
+func (q *Question) parseCognitionSp(row *CT_RowData) {
 	content := row.Content[1]
-	numList := utils.ReadNum(content)
+	numList := bases.ReadNum(content)
 
 	for _, num := range numList {
 		numObj := QuestionCognitionSp{
@@ -384,7 +396,7 @@ func (q *Question) parseCognitionSp(row *RowData) {
 }
 
 //试题解析
-func (q *Question) parseResolve(row *RowData) {
+func (q *Question) parseResolve(row *CT_RowData) {
 	content := row.Content[1]
 	if content == "" {
 		return
@@ -401,7 +413,7 @@ func (q *Question) parseResolve(row *RowData) {
 }
 
 //试题答案(答案的数据读取需要区分不同的题型)
-func (q *Question) parseAnswer(row *RowData) {
+func (q *Question) parseAnswer(row *CT_RowData) {
 	//选择题的属性
 	var (
 		isChoice = false
@@ -452,8 +464,8 @@ func (q *Question) parseAnswer(row *RowData) {
 	}
 
 	var (
-		mapNums = strings.Join(utils.ReadNum(maps), ",")
-		spNums  = strings.Join(utils.ReadNum(sps), ",")
+		mapNums = strings.Join(bases.ReadNum(maps), ",")
+		spNums  = strings.Join(bases.ReadNum(sps), ",")
 	)
 
 	if isChoice {
@@ -481,7 +493,7 @@ func (q *Question) parseAnswer(row *RowData) {
 }
 
 //试题提示
-func (q *Question) parseHint(row *RowData) {
+func (q *Question) parseHint(row *CT_RowData) {
 	content := row.Content[1]
 	if content == "" {
 		return

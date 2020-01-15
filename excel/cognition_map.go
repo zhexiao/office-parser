@@ -1,7 +1,7 @@
 package excel
 
 import (
-	"github.com/zhexiao/office-parser/utils"
+	"github.com/zhexiao/office-parser/bases"
 	"log"
 	"strconv"
 	"strings"
@@ -73,13 +73,13 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 			cognitionMap := NewCT_CognitionMap()
 			cognitionMap.Faculty = faculty
 			cognitionMap.Subject = subject
-			cognitionMap.PreNum = strings.Join(utils.ReadNum(preNumStr), ",")
-			cognitionMap.ExtendNum = strings.Join(utils.ReadNum(extendNumStr), ",")
+			cognitionMap.PreNum = strings.Join(bases.ReadNum(preNumStr), ",")
+			cognitionMap.ExtendNum = strings.Join(bases.ReadNum(extendNumStr), ",")
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
-					num := strings.Join(utils.ReadNum(v), ",")
-					name := utils.ReadText(v)
+					num := strings.Join(bases.ReadNum(v), ",")
+					name := bases.ReadText(v)
 
 					if num != "" && name != "" {
 						//num转大写

@@ -2,7 +2,7 @@ package excel
 
 import (
 	"fmt"
-	"github.com/zhexiao/office-parser/utils"
+	"github.com/zhexiao/office-parser/bases"
 	"log"
 	"strconv"
 	"strings"
@@ -82,13 +82,13 @@ func ParsePaper(e *Excel) *CT_Paper {
 			if err != nil {
 				log.Panicf("应用类型 解析失败 %s", err)
 			}
-			resUsage := utils.ResUsage(resUsageNum).Val()
+			resUsage := bases.ResUsage(resUsageNum).Val()
 
 			labelStringNum, err := strconv.Atoi(row.Content[1])
 			if err != nil {
 				log.Panicf("试卷描述类型 解析失败 %s", err)
 			}
-			labelString := utils.PaperLabelString(labelStringNum).Val()
+			labelString := bases.PaperLabelString(labelStringNum).Val()
 
 			note := row.Content[2]
 			name := row.Content[3]
@@ -101,7 +101,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 		case 3:
 			//读取试卷本身属性
 			outlineNumsContent := row.Content[0]
-			nums := strings.Join(utils.ReadNum(outlineNumsContent), ",")
+			nums := strings.Join(bases.ReadNum(outlineNumsContent), ",")
 
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {

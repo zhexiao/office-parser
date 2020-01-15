@@ -1,43 +1,48 @@
 package word
 
-import "io"
+import (
+	"io/ioutil"
+)
 
 //word上传试题
-func ConvertFromFile(filepath string) *Question {
-	//得到word数据
-	doc := Open(filepath)
-	w := QuestionWord(doc)
+func ConvertFromFile(filepath string) (*Question, error) {
+	fileBytes, _ := ioutil.ReadFile(filepath)
 
 	//解析试题结构
-	return ParseQuestion(w)
+	q, err := ConvertFromData(fileBytes)
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
 }
 
 //word上传试题
-func ConvertFromData(r io.ReaderAt, size int64) *Question {
-	//得到word数据
-	doc := Read(r, size)
-	w := QuestionWord(doc)
-
-	//解析试题结构
-	return ParseQuestion(w)
+func ConvertFromData(fileBytes []byte) (*Question, error) {
+	q, err := ParseQuestion(fileBytes)
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
 }
 
 //word上传试卷
-func ConvertPaperFromFile(filepath string) *CT_PureWord {
-	//得到word数据
-	doc := Open(filepath)
-	w := PaperWord(doc)
+func ConvertPaperFromFile(filepath string) (*CT_PureWord, error) {
+	fileBytes, _ := ioutil.ReadFile(filepath)
 
-	//解析试卷
-	return ParsePaper(w)
+	//解析试题结构
+	paper, err := ConvertPaperFromData(fileBytes)
+	if err != nil {
+		return nil, err
+	}
+	return paper, nil
 }
 
 //word上传试卷
-func ConvertPaperFromData(r io.ReaderAt, size int64) *CT_PureWord {
-	//得到word数据
-	doc := Read(r, size)
-	w := PaperWord(doc)
+func ConvertPaperFromData(fileBytes []byte) (*CT_PureWord, error) {
+	paper, err := ParsePaper(fileBytes)
+	if err != nil {
+		return nil, err
+	}
 
-	//解析试卷
-	return ParsePaper(w)
+	return paper, nil
 }

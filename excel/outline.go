@@ -1,7 +1,7 @@
 package excel
 
 import (
-	"github.com/zhexiao/office-parser/utils"
+	"github.com/zhexiao/office-parser/bases"
 	"log"
 	"strconv"
 	"strings"
@@ -127,12 +127,12 @@ func ParseOutline(e *Excel) *CT_Outline {
 
 			//实例化
 			outAttr := NewCT_OutlineAttr()
-			outAttr.CognitionMapNums = utils.ReadNum(mapsStr)
+			outAttr.CognitionMapNums = bases.ReadNum(mapsStr)
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
-					numArr := utils.ReadNum(v)
-					name := utils.ReadText(v)
+					numArr := bases.ReadNum(v)
+					name := bases.ReadText(v)
 
 					if len(numArr) > 0 && name != "" {
 						num := numArr[0]

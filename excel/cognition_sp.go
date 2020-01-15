@@ -1,7 +1,7 @@
 package excel
 
 import (
-	"github.com/zhexiao/office-parser/utils"
+	"github.com/zhexiao/office-parser/bases"
 	"log"
 	"strconv"
 	"strings"
@@ -83,14 +83,14 @@ func ParseCognitionSp(e *Excel) []*CT_CognitionSp {
 			cog.Faculty = faculty
 			cog.Subject = subject
 			cog.SpType = spType
-			cog.PreNum = strings.Join(utils.ReadNum(preNumStr), ",")
-			cog.ExtendNum = strings.Join(utils.ReadNum(extendNumStr), ",")
-			cog.CognitionMapNums = strings.Join(utils.ReadNum(mapsStr), ",")
+			cog.PreNum = strings.Join(bases.ReadNum(preNumStr), ",")
+			cog.ExtendNum = strings.Join(bases.ReadNum(extendNumStr), ",")
+			cog.CognitionMapNums = strings.Join(bases.ReadNum(mapsStr), ",")
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
-					num := strings.Join(utils.ReadNum(v), ",")
-					name := utils.ReadText(v)
+					num := strings.Join(bases.ReadNum(v), ",")
+					name := bases.ReadText(v)
 
 					if num != "" && name != "" {
 						//num转大写

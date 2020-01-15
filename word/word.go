@@ -6,8 +6,7 @@ import (
 	"gitee.com/zhexiao/unioffice/common"
 	"gitee.com/zhexiao/unioffice/document"
 	"github.com/zhexiao/mtef-go/eqn"
-	"github.com/zhexiao/office-parser/utils"
-	"io"
+	"github.com/zhexiao/office-parser/bases"
 	"log"
 	"math"
 	"strconv"
@@ -16,30 +15,30 @@ import (
 	"time"
 )
 
-type abNumILvl struct {
+type CT_AbNumILvl struct {
 	ilvl   int64
 	numFmt string
 	text   string
 	start  int64
 }
 
-type abNumData struct {
+type CT_AbNumData struct {
 	numId int64
-	iLvl  []*abNumILvl
+	iLvl  []*CT_AbNumILvl
 }
 
-type RowData struct {
+type CT_RowData struct {
 	Content     []string
 	HtmlContent []string
 }
 
-type TableData struct {
-	Rows []*RowData
+type CT_TableData struct {
+	Rows []*CT_RowData
 }
 
-type Word struct {
+type CT_Word struct {
 	Uri    string
-	Tables []*TableData
+	Tables []*CT_TableData
 	doc    *document.Document
 
 	//公式对象 RID:LATEX 的对应关系
@@ -56,67 +55,147 @@ type Word struct {
 
 	//自动序号相关
 	numIdMapAbNumId map[int64]int64
-	numData         []*abNumData
+	numData         []*CT_AbNumData
 }
 
-func NewWord() *Word {
-	return &Word{}
+func NewCT_Word() *CT_Word {
+	return &CT_Word{}
 }
 
-//直接读文件内容
-func Read(r io.ReaderAt, size int64) *document.Document {
-	doc, err := document.Read(r, size)
+func (w *CT_Word) read(fileByte []byte) error {
+	doc, err := document.Read(bytes.NewReader(fileByte), int64(len(fileByte)))
 	if err != nil {
-		log.Panic(err)
+		return bases.NewOpError(bases.LibError, err.Error())
 	}
 
-	return doc
-}
-
-//打开文件内容
-func Open(filepath string) *document.Document {
-	doc, err := document.Open(filepath)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return doc
-}
-
-//解析word试题
-func QuestionWord(doc *document.Document) *Word {
-	//得到doc指针数据
-	w := NewWord()
 	w.doc = doc
-
-	//解析公式和图片
-	w.parseOle(w.doc.OleObjectPaths)
-	w.parseImage(w.doc.Images)
-
-	//读取table数据
-	w.getTableData()
-
-	return w
+	return nil
 }
 
-//解析word试卷
-func PaperWord(doc *document.Document) *Word {
-	//得到doc指针数据
-	w := NewWord()
-	w.doc = doc
+//解析整个word数据
+func (w *CT_Word) getWordData() (string, error) {
 	//解析公式和图片
-	w.parseOle(w.doc.OleObjectPaths)
-	w.parseImage(w.doc.Images)
+	w.parseOle()
+	w.parseImage()
 
 	//解析自动序号
 	w.parseOrder()
 
-	return w
+	//得到word的所有文本信息
+	data, err := w.getPureText()
+	if err != nil {
+		return "", err
+	}
+
+	return data, nil
+}
+
+//解析word表格数据
+func (w *CT_Word) getWordTableData() ([]*CT_TableData, error) {
+	//解析公式和图片
+	w.parseOle()
+	w.parseImage()
+
+	//读取table数据
+	w.getTableData()
+
+	return w.Tables, nil
+}
+
+//把ole对象文件转为latex字符串
+func (w *CT_Word) parseOle() {
+	w.oles = &sync.Map{}
+	w.olesImages = &sync.Map{}
+
+	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
+	var wg sync.WaitGroup
+	wg.Add(len(w.doc.OleObjectPaths))
+
+	for _, ole := range w.doc.OleObjectPaths {
+		//goroutine 运行
+		go func(word *CT_Word, oleObjPath document.OleObjectPath) {
+			defer wg.Done()
+
+			//调用解析库解析公式
+			latex := eqn.Convert(oleObjPath.Path())
+			if latex == "" {
+				//无法解析的公式，转图片
+				wmfObj := w.doc.OleObjectWmfPath[0]
+				imageName := fmt.Sprintf("%s_%s", strconv.Itoa(int(time.Now().UnixNano())), wmfObj.Rid())
+				bases.WmfConvert(wmfObj.Path(), imageName)
+
+				word.olesImages.Store(wmfObj.Rid(), fmt.Sprintf("%s/%s/%s.jpg", bases.OpQiniu.Domain, bases.OpQiniu.UploadPrefix, imageName))
+			} else {
+				//成功解析的公式，替换$$为[ 或 ]
+				latex = strings.Replace(latex, "$$", "\\[", 1)
+				latex = strings.Replace(latex, "$$", "\\]", 1)
+
+				w.oles.Store(oleObjPath.Rid(), &latex)
+			}
+		}(w, ole)
+	}
+
+	wg.Wait()
+}
+
+//把图片上传到七牛
+func (w *CT_Word) parseImage() {
+	w.images = &sync.Map{}
+
+	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
+	var wg sync.WaitGroup
+	wg.Add(len(w.doc.Images))
+
+	for _, img := range w.doc.Images {
+		//goroutine 运行
+		go func(word *CT_Word, image common.ImageRef) {
+			defer wg.Done()
+
+			//调用图片上传
+			localFile := image.Path()
+			key := fmt.Sprintf("%s_%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.RelID(), image.Format())
+
+			//上传到七牛
+			uri, _ := bases.UploadFileToQiniu(key, localFile)
+
+			word.images.Store(image.RelID(), uri)
+		}(w, img)
+	}
+
+	wg.Wait()
+}
+
+//执行自动序号数据读取
+func (w *CT_Word) parseOrder() {
+	if w.doc.Numbering.X() != nil {
+		//读取序号数据
+		for _, df := range w.doc.Numbering.Definitions() {
+			abData := &CT_AbNumData{}
+			abData.numId = df.AbstractNumberID()
+			for _, lv := range df.X().Lvl {
+				abData.iLvl = append(abData.iLvl, &CT_AbNumILvl{
+					ilvl:   lv.IlvlAttr,
+					numFmt: lv.NumFmt.ValAttr.String(),
+					text:   *lv.LvlText.ValAttr,
+					start:  lv.Start.ValAttr,
+				})
+			}
+
+			w.numData = append(w.numData, abData)
+		}
+
+		//numId与abstractNumId的映射关系
+		numIdMapAbNumId := make(map[int64]int64)
+		for _, nu := range w.doc.Numbering.X().Num {
+			numIdMapAbNumId[nu.NumIdAttr] = nu.AbstractNumId.ValAttr
+		}
+
+		w.numIdMapAbNumId = numIdMapAbNumId
+	}
 }
 
 //得到纯解析的word文本数据
-func (w *Word) getPureText() string {
-	//nbspReg := regexp.MustCompile(`\(([&nbsp;]*?)\)`)
+func (w *CT_Word) getPureText() (string, error) {
 	res := bytes.Buffer{}
 
 	//p数据，段落自动编号当前值
@@ -137,10 +216,6 @@ func (w *Word) getPureText() string {
 
 		//读取段落样式
 		if paragraph.X().PPr != nil {
-			//fmt.Println(pString)
-			//fmt.Printf("%#v \n", paragraph.X().PPr.Ind)
-			//fmt.Println("====================================")
-
 			//段落居中、居右
 			if paragraph.X().PPr.Jc != nil {
 				//fmt.Println(pString)
@@ -169,7 +244,11 @@ func (w *Word) getPureText() string {
 			}
 
 			if paragraphSortNum != 0 {
-				ivlData := w.readAbNumData(paragraphSortNumId, 0)
+				ivlData, err := w.readAbNumData(paragraphSortNumId, 0)
+				if err != nil {
+					return "", err
+				}
+
 				numFmt := ivlData.numFmt
 				numText := ivlData.text
 
@@ -206,28 +285,21 @@ func (w *Word) getPureText() string {
 					//fmt.Println(paragraph.X().PPr.Ind.FirstLineCharsAttr)
 					pString = fmt.Sprintf("%s%s", indentNbsp, pString)
 				}
-
-				//fmt.Println(pString)
-				//fmt.Printf("%#v \n", *paragraph.X().PPr.Ind.FirstLineCharsAttr)
-				//fmt.Println("====================================")
 			}
 		}
 
 		//写入段落样式
 		pString = fmt.Sprintf("<p %s>%s</p>", paragraphStyle, pString)
 
-		//把字符串里面的(), (&nbsp;), (&nbsp;&nbsp;), (&nbsp;&nbsp;&nbsp;)等全部换成4个&nbsp;
-		//pString = nbspReg.ReplaceAllString(pString, "(&nbsp;&nbsp;&nbsp;&nbsp;)")
-
 		//保存内容
 		res.WriteString(pString)
 	}
 
-	return res.String()
+	return res.String(), nil
 }
 
 //读取段落数据
-func (w *Word) getParagraphData(paragraph document.Paragraph) string {
+func (w *CT_Word) getParagraphData(paragraph document.Paragraph) string {
 	//存储run数据
 	paragraphBuffer := bytes.Buffer{}
 
@@ -267,7 +339,6 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			//把空格替换成&nbsp;
 			if strings.Contains(text, " ") {
 				text = strings.Replace(text, " ", "&nbsp;", -1)
-				//text = strings.Replace(text, " ", "<span style='display:inline-block;width:10.5px;'></span>", -1)
 			}
 
 			//检查文本样式
@@ -275,11 +346,6 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 			//parser_underline_wavyDouble 双波浪线
 			//parser_em_zhuozhong	着重符
 			if run.X().RPr != nil {
-				//查看样式数据
-				//fmt.Println(text)
-				//fmt.Printf("%#v \n",run.X().RPr)
-				//fmt.Println("====================================")
-
 				//删除线
 				if run.X().RPr.Strike != nil {
 					text = fmt.Sprintf("<del>%s</del>", text)
@@ -349,46 +415,103 @@ func (w *Word) getParagraphData(paragraph document.Paragraph) string {
 	return paragraphBuffer.String()
 }
 
+//读取图片数据
+func (w *CT_Word) readImage(images []document.InlineDrawing) string {
+	var imageUri string
+	for _, di := range images {
+		imf, _ := di.GetImage()
+		uri, _ := w.images.Load(imf.RelID())
+
+		imageUri = fmt.Sprintf("<img src='%s' style='width:%s;height:%s'/>", uri, di.X().Extent.Size().Width, di.X().Extent.Size().Height)
+	}
+
+	return imageUri
+}
+
+//读取公式数据
+func (w *CT_Word) readOles(ole []document.OleObject) string {
+	var latexStr string
+	for _, ole := range ole {
+		latexPtr, ok := w.oles.Load(ole.OleRid())
+		if ok {
+			latexStr = *latexPtr.(*string)
+		} else {
+			oleImg, ok := w.olesImages.Load(ole.ImagedataRid())
+			if ok {
+				latexStr = fmt.Sprintf("<img src='%s' style='%s' />", oleImg, *ole.Shape().StyleAttr)
+			}
+		}
+	}
+
+	return latexStr
+}
+
+//读取自动序号的数据
+func (w *CT_Word) readAbNumData(numId int64, ilvl int64) (*CT_AbNumILvl, error) {
+	abNumId, ok := w.numIdMapAbNumId[numId]
+	if !ok {
+		return nil, bases.NewOpError(bases.LibError, fmt.Sprintf("自动序号解析失败，找不到numId=%d", numId))
+	}
+
+	//读取 abstractNum 数据
+	var tmpAbData *CT_AbNumData
+	for _, abData := range w.numData {
+		abDataNumId := abData.numId
+
+		if abDataNumId == abNumId {
+			tmpAbData = abData
+		}
+	}
+
+	if tmpAbData == nil {
+		return nil, bases.NewOpError(bases.LibError, fmt.Sprintf("找不到AbNum实例数据，abNumId=%d", abNumId))
+	}
+
+	//读取 lvl 数据
+	var tmpAbLvl *CT_AbNumILvl
+	for _, abLvl := range tmpAbData.iLvl {
+		abLvlVal := abLvl.ilvl
+
+		if abLvlVal == ilvl {
+			tmpAbLvl = abLvl
+		}
+	}
+
+	if tmpAbLvl == nil {
+		return nil, bases.NewOpError(bases.LibError, fmt.Sprintf("找不到ilvl实例数据，ilvl=%d", ilvl))
+	}
+
+	return tmpAbLvl, nil
+}
+
 //读取表格数据
-func (w *Word) getTableData() {
+func (w *CT_Word) getTableData() {
 	tables := w.doc.Tables()
 	for _, table := range tables {
 		//读取一个表单里面的所有行
 		rows := table.Rows()
 
 		//读取行里面的数据
-		tableData := w.getRowsData(&rows)
-		w.Tables = append(w.Tables, &tableData)
+		td := &CT_TableData{}
+		for _, row := range rows {
+			cells := row.Cells()
+			rowData := &CT_RowData{}
+
+			for _, cell := range cells {
+				rawText, htmlText := w.getCellText(&cell)
+				rowData.Content = append(rowData.Content, rawText)
+				rowData.HtmlContent = append(rowData.HtmlContent, htmlText)
+			}
+
+			td.Rows = append(td.Rows, rowData)
+		}
+
+		w.Tables = append(w.Tables, td)
 	}
-}
-
-//读取所有行的数据
-func (w *Word) getRowsData(rows *[]document.Row) TableData {
-	var td TableData
-	for _, row := range *rows {
-		rowData := w.getRowText(&row)
-		td.Rows = append(td.Rows, &rowData)
-	}
-
-	return td
-}
-
-//读取每一行的数据
-func (w *Word) getRowText(row *document.Row) RowData {
-	cells := row.Cells()
-	rowData := RowData{}
-
-	for _, cell := range cells {
-		rawText, htmlText := w.getCellText(&cell)
-		rowData.Content = append(rowData.Content, rawText)
-		rowData.HtmlContent = append(rowData.HtmlContent, htmlText)
-	}
-
-	return rowData
 }
 
 //读取行里面每一个单元的数据
-func (w *Word) getCellText(cell *document.Cell) (string, string) {
+func (w *CT_Word) getCellText(cell *document.Cell) (string, string) {
 	paragraphs := cell.Paragraphs()
 
 	resText := bytes.Buffer{}
@@ -423,192 +546,4 @@ func (w *Word) getCellText(cell *document.Cell) (string, string) {
 	}
 
 	return resText.String(), htmlResText.String()
-}
-
-//读取图片
-func (w *Word) readImage(images []document.InlineDrawing) string {
-	var imageUri string
-	for _, di := range images {
-		imf, _ := di.GetImage()
-		uri, _ := w.images.Load(imf.RelID())
-
-		imageUri = fmt.Sprintf("<img src='%s' style='width:%s;height:%s'/>", uri, di.X().Extent.Size().Width, di.X().Extent.Size().Height)
-	}
-
-	return imageUri
-}
-
-//读取公式
-func (w *Word) readOles(ole []document.OleObject) string {
-	var latexStr string
-	for _, ole := range ole {
-		latexPtr, ok := w.oles.Load(ole.OleRid())
-		if ok {
-			latexStr = *latexPtr.(*string)
-		} else {
-			oleImg, ok := w.olesImages.Load(ole.ImagedataRid())
-			if ok {
-				latexStr = fmt.Sprintf("<img src='%s' style='%s' />", oleImg, *ole.Shape().StyleAttr)
-			}
-		}
-	}
-
-	return latexStr
-}
-
-//把ole对象文件转为latex字符串
-func (w *Word) parseOle(olePaths []document.OleObjectPath) {
-	//w.oles = make(map[string]*string)
-	//w.olesImages = make(map[string]string)
-
-	w.oles = &sync.Map{}
-	w.olesImages = &sync.Map{}
-
-	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
-	var wg sync.WaitGroup
-	wg.Add(len(olePaths))
-
-	//循环数据
-	//var mutex sync.Mutex
-	for _, ole := range olePaths {
-		//goroutine 运行
-		go func(word *Word, oleObjPath document.OleObjectPath) {
-			// 在函数退出时调用 Done
-			defer wg.Done()
-
-			//调用解析库解析公式
-			latex := eqn.Convert(oleObjPath.Path())
-			if latex == "" {
-				//无法解析的公式，转图片
-				wmfObj := w.doc.OleObjectWmfPath[0]
-				imageName := fmt.Sprintf("%s_%s", strconv.Itoa(int(time.Now().UnixNano())), wmfObj.Rid())
-				utils.WmfConvert(wmfObj.Path(), imageName)
-				word.olesImages.Store(wmfObj.Rid(), fmt.Sprintf("%s/%s/%s.jpg", utils.OfficeParserQiniuCfg.Domain, utils.OfficeParserQiniuCfg.UploadPrefix, imageName))
-
-				//map并发问题
-				//mutex.Lock()
-				//word.olesImages[wmfObj.Rid()] = fmt.Sprintf("%s/%s/%s.jpg", utils.OfficeParserQiniuCfg.Domain, utils.OfficeParserQiniuCfg.UploadPrefix, imageName)
-				//mutex.Unlock()
-			} else {
-				//成功解析的公式，替换$$为[ 或 ]
-				latex = strings.Replace(latex, "$$", "\\[", 1)
-				latex = strings.Replace(latex, "$$", "\\]", 1)
-				w.oles.Store(oleObjPath.Rid(), &latex)
-
-				//map并发问题
-				//mutex.Lock()
-				//word.oles[oleObjPath.Rid()] = &latex
-				//mutex.Unlock()
-			}
-		}(w, ole)
-	}
-
-	wg.Wait()
-}
-
-//把图片上传到七牛
-func (w *Word) parseImage(images []common.ImageRef) {
-	w.images = &sync.Map{}
-
-	//使用 WaitGroup 来跟踪 goroutine 的工作是否完成
-	var wg sync.WaitGroup
-	wg.Add(len(images))
-
-	//var mutex sync.Mutex
-	for _, img := range images {
-		//goroutine 运行
-		go func(word *Word, image common.ImageRef) {
-			// 在函数退出时调用 Done
-			defer wg.Done()
-
-			//调用图片上传
-			localFile := image.Path()
-			key := fmt.Sprintf("%s_%s.%s", strconv.Itoa(int(time.Now().UnixNano())), image.RelID(), image.Format())
-
-			//上传到七牛
-			uri := utils.UploadFileToQiniu(key, localFile)
-			word.images.Store(image.RelID(), uri)
-
-			//map并发问题
-			//mutex.Lock()
-			//word.images[image.RelID()] = uri
-			//mutex.Unlock()
-		}(w, img)
-	}
-
-	wg.Wait()
-}
-
-//执行自动序号数据读取
-func (w *Word) parseOrder() {
-	if w.doc.Numbering.X() != nil {
-		w.parseOrderNum()
-		w.parseNumIdMap()
-	}
-}
-
-//读取序号数据
-func (w *Word) parseOrderNum() {
-	for _, df := range w.doc.Numbering.Definitions() {
-		abData := &abNumData{}
-		abData.numId = df.AbstractNumberID()
-		for _, lv := range df.X().Lvl {
-			abData.iLvl = append(abData.iLvl, &abNumILvl{
-				ilvl:   lv.IlvlAttr,
-				numFmt: lv.NumFmt.ValAttr.String(),
-				text:   *lv.LvlText.ValAttr,
-				start:  lv.Start.ValAttr,
-			})
-		}
-
-		w.numData = append(w.numData, abData)
-	}
-}
-
-//numId与abstractNumId的映射关系
-func (w *Word) parseNumIdMap() {
-	numIdMapAbNumId := make(map[int64]int64)
-	for _, nu := range w.doc.Numbering.X().Num {
-		numIdMapAbNumId[nu.NumIdAttr] = nu.AbstractNumId.ValAttr
-	}
-
-	w.numIdMapAbNumId = numIdMapAbNumId
-}
-
-//读取自动序号的数据
-func (w *Word) readAbNumData(numId int64, ilvl int64) *abNumILvl {
-	abNumId, ok := w.numIdMapAbNumId[numId]
-	if !ok {
-		log.Panicf("自动序号解析失败，找不到numId=%d", numId)
-	}
-
-	//读取 abstractNum 数据
-	var tmpAbData *abNumData
-	for _, abData := range w.numData {
-		abDataNumId := abData.numId
-
-		if abDataNumId == abNumId {
-			tmpAbData = abData
-		}
-	}
-
-	if tmpAbData == nil {
-		log.Panicf("找不到AbNum实例数据，abNumId=%d", abNumId)
-	}
-
-	//读取 lvl 数据
-	var tmpAbLvl *abNumILvl
-	for _, abLvl := range tmpAbData.iLvl {
-		abLvlVal := abLvl.ilvl
-
-		if abLvlVal == ilvl {
-			tmpAbLvl = abLvl
-		}
-	}
-
-	if tmpAbLvl == nil {
-		log.Panicf("找不到ilvl实例数据，ilvl=%d", ilvl)
-	}
-
-	return tmpAbLvl
 }
