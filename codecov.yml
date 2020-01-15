@@ -1,0 +1,4 @@
+ignore:
+  - "main.go"
+  - "controllers.go"
+  - "word/number.go"
