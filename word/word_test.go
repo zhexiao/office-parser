@@ -31,7 +31,7 @@ func TestWordRead(t *testing.T) {
 	}
 
 	if ct.doc == nil {
-		t.Error("无法读取doc数据")
+		t.Error("无法读取doc的数据")
 	}
 }
 
