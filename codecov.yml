@@ -2,4 +2,4 @@ ignore:
   - "main.go"
   - "controllers.go"
   - "word/number.go"
-  - "constants.go"
+  - "bases/constants.go"
