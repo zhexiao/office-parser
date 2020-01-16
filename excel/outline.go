@@ -1,8 +1,8 @@
 package excel
 
 import (
+	"fmt"
 	"github.com/zhexiao/office-parser/bases"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -47,7 +47,7 @@ func NewCT_OutlineAttr() *CT_OutlineAttr {
 	return &CT_OutlineAttr{}
 }
 
-func ParseOutline(e *Excel) *CT_Outline {
+func ParseOutline(e *CT_Excel) (*CT_Outline, error) {
 	var (
 		//所属目录的结束节点位置
 		nodeEndCol int
@@ -72,24 +72,24 @@ func ParseOutline(e *Excel) *CT_Outline {
 			//得到学科学段
 			faculty, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("解析学段失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析学段失败 %s", err))
 			}
 
 			subject, err := strconv.Atoi(row.Content[2])
 			if err != nil {
-				log.Panicf("解析学科失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析学科失败 %s", err))
 			}
 
 			publisherName := strings.Trim(row.Content[3], " ")
 
 			year, err := strconv.Atoi(row.Content[4])
 			if err != nil {
-				log.Panicf("解析审核年份失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析审核年份失败 %s", err))
 			}
 
 			grade, err := strconv.Atoi(row.Content[5])
 			if err != nil {
-				log.Panicf("解析适用年级失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析适用年级失败 %s", err))
 			}
 
 			termName := strings.Trim(row.Content[6], " ")
@@ -164,5 +164,5 @@ func ParseOutline(e *Excel) *CT_Outline {
 
 	outline.OutlineBook = outlineBook
 	outline.Outline = outAttrs
-	return outline
+	return outline, nil
 }

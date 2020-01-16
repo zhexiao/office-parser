@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/go-yaml/yaml"
 	"github.com/zhexiao/office-parser/bases"
-	"github.com/zhexiao/office-parser/word"
+	"github.com/zhexiao/office-parser/excel"
 	"io/ioutil"
 	"log"
 	"os"
@@ -148,8 +148,9 @@ func main() {
 }
 
 func test() {
-	data, err := word.ConvertFromFile("./test/question-fill-201903011.docx")
+	//data, err := word.ConvertFromFile("./test/question-fill-201903011.docx")
 	//data, err := word.ConvertPaperFromFile("./test/ywgs.docx")
+	data, err := excel.ConvertFromFile("./_testdata/outline.xlsx", "outline")
 	if err != nil {
 		log.Panicf("失败: %s", err)
 	}

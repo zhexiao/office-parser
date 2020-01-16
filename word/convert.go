@@ -9,11 +9,7 @@ func ConvertFromFile(filepath string) (*Question, error) {
 	fileBytes, _ := ioutil.ReadFile(filepath)
 
 	//解析试题结构
-	q, err := ConvertFromData(fileBytes)
-	if err != nil {
-		return nil, err
-	}
-	return q, nil
+	return ConvertFromData(fileBytes)
 }
 
 //word上传试题
@@ -30,11 +26,7 @@ func ConvertPaperFromFile(filepath string) (*CT_PureWord, error) {
 	fileBytes, _ := ioutil.ReadFile(filepath)
 
 	//解析试题结构
-	paper, err := ConvertPaperFromData(fileBytes)
-	if err != nil {
-		return nil, err
-	}
-	return paper, nil
+	return ConvertPaperFromData(fileBytes)
 }
 
 //word上传试卷

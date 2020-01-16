@@ -1,8 +1,8 @@
 package excel
 
 import (
+	"fmt"
 	"github.com/zhexiao/office-parser/bases"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -24,7 +24,7 @@ func NewCT_CognitionMap() *CT_CognitionMap {
 	return &CT_CognitionMap{}
 }
 
-func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
+func ParseCognitionMap(e *CT_Excel) ([]*CT_CognitionMap, error) {
 	var (
 		//获得节点结束的列，从0开始
 		nodeEndCol int
@@ -46,12 +46,12 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 			//得到学科学段
 			facultyTmp, err := strconv.Atoi(row.Content[0])
 			if err != nil {
-				log.Panicf("解析学段失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析学段失败 %s", err))
 			}
 
 			subjectTmp, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("解析学科失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("解析学科失败 %s", err))
 			}
 
 			subject = subjectTmp
@@ -107,5 +107,5 @@ func ParseCognitionMap(e *Excel) []*CT_CognitionMap {
 		}
 	}
 
-	return cogs
+	return cogs, nil
 }

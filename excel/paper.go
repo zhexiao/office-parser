@@ -3,7 +3,6 @@ package excel
 import (
 	"fmt"
 	"github.com/zhexiao/office-parser/bases"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -56,7 +55,7 @@ func NewSubtypeAttr() *SubtypeAttr {
 	return &SubtypeAttr{}
 }
 
-func ParsePaper(e *Excel) *CT_Paper {
+func ParsePaper(e *CT_Excel) (*CT_Paper, error) {
 	paper := NewCT_Paper()
 	paperAttr := NewPaperAttr()
 	var subtypeAttrs []*SubtypeAttr
@@ -80,13 +79,13 @@ func ParsePaper(e *Excel) *CT_Paper {
 			//读取试卷本身属性
 			resUsageNum, err := strconv.Atoi(row.Content[0])
 			if err != nil {
-				log.Panicf("应用类型 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("应用类型 解析失败 %s", err))
 			}
 			resUsage := bases.ResUsage(resUsageNum).Val()
 
 			labelStringNum, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("试卷描述类型 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("试卷描述类型 解析失败 %s", err))
 			}
 			labelString := bases.PaperLabelString(labelStringNum).Val()
 
@@ -105,22 +104,22 @@ func ParsePaper(e *Excel) *CT_Paper {
 
 			grade, err := strconv.Atoi(row.Content[1])
 			if err != nil {
-				log.Panicf("年级 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("年级 解析失败 %s", err))
 			}
 
 			time, err := strconv.Atoi(row.Content[2])
 			if err != nil {
-				log.Panicf("时间 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("时间 解析失败 %s", err))
 			}
 
 			totalScore, err := strconv.ParseFloat(row.Content[3], 2)
 			if err != nil {
-				log.Panicf("总分 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("总分 解析失败 %s", err))
 			}
 
 			year, err := strconv.Atoi(row.Content[4])
 			if err != nil {
-				log.Panicf("年度 解析失败 %s", err)
+				return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("年度 解析失败 %s", err))
 			}
 
 			area := row.Content[5]
@@ -143,7 +142,7 @@ func ParsePaper(e *Excel) *CT_Paper {
 				currentQuestionIdx = -1
 
 				if rowLen < 5 {
-					log.Panic("表单结构有误，找不到大题描述")
+					return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("表单结构有误，找不到大题描述"))
 				}
 
 				subtypNote := strings.Trim(row.Content[5], " ")
@@ -169,12 +168,12 @@ func ParsePaper(e *Excel) *CT_Paper {
 					qAttr := NewQuestionAttr()
 					qAttr.Qid = strings.ToLower(qId)
 					if rowLen < 4 {
-						log.Panic("表结构有误，找不到分数列")
+						return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("表结构有误，找不到分数列"))
 					}
 
 					qScore, err := strconv.ParseFloat(row.Content[3], 2)
 					if err != nil {
-						log.Panicf("分数转为浮点类型出错 %s %s", err, qId)
+						return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("分数转为浮点类型出错 %s %s", err, qId))
 					}
 					qAttr.Score = qScore
 
@@ -197,12 +196,12 @@ func ParsePaper(e *Excel) *CT_Paper {
 					childQAttr := NewQuestionAttr()
 					childQAttr.Qid = strings.ToLower(newChildQid)
 					if rowLen < 5 {
-						log.Panic("表结构有误，找不到分数列")
+						return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("表结构有误，找不到分数列"))
 					}
 
 					childQScore, err := strconv.ParseFloat(row.Content[4], 2)
 					if err != nil {
-						log.Panicf("子题分数 转为浮点类型出错 %s", err)
+						return nil, bases.NewOpError(bases.NormalError, fmt.Sprintf("子题分数 转为浮点类型出错 %s", err))
 					}
 					childQAttr.Score = childQScore
 
@@ -219,5 +218,5 @@ func ParsePaper(e *Excel) *CT_Paper {
 	paper.Paper = paperAttr
 	paper.Questions = subtypeAttrs
 
-	return paper
+	return paper, nil
 }

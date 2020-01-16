@@ -24,7 +24,7 @@ func NewCT_BookIndex() *CT_BookIndex {
 	return &CT_BookIndex{}
 }
 
-func ParseBook(e *Excel) *CT_Book {
+func ParseBook(e *CT_Excel) (*CT_Book, error) {
 	var (
 		contentIdx    int
 		levelStrArray []string
@@ -74,5 +74,5 @@ func ParseBook(e *Excel) *CT_Book {
 		book.BookIndexs = append(book.BookIndexs, bIdx)
 	}
 
-	return book
+	return book, nil
 }
