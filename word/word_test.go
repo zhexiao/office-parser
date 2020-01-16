@@ -34,6 +34,12 @@ func TestWordRead(t *testing.T) {
 	if ct.doc == nil {
 		t.Error("无法读取doc的数据")
 	}
+
+	ct1 := NewCT_Word()
+	err = ct1.read([]byte{})
+	if err == nil {
+		t.Error(err)
+	}
 }
 
 func TestParseOle(t *testing.T) {
@@ -91,7 +97,7 @@ func TestParseOrder(t *testing.T) {
 	}
 
 	ct.parseOrder()
-	if len(ct.numIdMapAbNumId) == 0 || len(ct.numData) ==0{
+	if len(ct.numIdMapAbNumId) == 0 || len(ct.numData) == 0 {
 		t.Error("无法识别序号数据")
 	}
 
@@ -113,11 +119,11 @@ func TestTableData(t *testing.T) {
 	}
 
 	ct.getTableData()
-	if len(ct.Tables) != 1{
+	if len(ct.Tables) != 1 {
 		t.Error("读取表格数据有误")
 	}
 
-	for _,value := range ct.Tables{
+	for _, value := range ct.Tables {
 		row := value.Rows
 		if len(row) != 3 {
 			t.Error("行数据读取失败")
