@@ -123,7 +123,10 @@ func (w *CT_Word) parseOle() {
 				//无法解析的公式，转图片
 				wmfObj := w.doc.OleObjectWmfPath[0]
 				imageName := fmt.Sprintf("%s_%s", strconv.Itoa(int(time.Now().UnixNano())), wmfObj.Rid())
-				bases.WmfConvert(wmfObj.Path(), imageName)
+				if err := bases.WmfConvert(wmfObj.Path(), imageName); err != nil {
+					log.Println(err)
+					return
+				}
 
 				word.olesImages.Store(wmfObj.Rid(), fmt.Sprintf("%s/%s/%s.jpg", bases.OpQiniu.Domain, bases.OpQiniu.UploadPrefix, imageName))
 			} else {
