@@ -9,17 +9,17 @@ const (
 )
 
 type OpError struct {
-	ErrorCode    errorSignal `json:"error_code"`
-	ErrorMessage string      `json:"detail"`
+	ErrorCode errorSignal `json:"error_code"`
+	Detail    string      `json:"detail"`
 }
 
 func NewOpError(code errorSignal, msg string) *OpError {
 	return &OpError{
-		ErrorCode:    code,
-		ErrorMessage: msg,
+		ErrorCode: code,
+		Detail:    msg,
 	}
 }
 
 func (e *OpError) Error() string {
-	return e.ErrorMessage
+	return e.Detail
 }

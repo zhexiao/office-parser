@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestErrorMessage(t *testing.T) {
+func TestError(t *testing.T) {
 	e := NewOpError(NormalError, "error")
 
 	if e.Error() != "error" {
