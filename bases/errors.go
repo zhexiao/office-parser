@@ -10,7 +10,7 @@ const (
 
 type OpError struct {
 	ErrorCode    errorSignal `json:"error_code"`
-	ErrorMessage string      `json:"error_message"`
+	ErrorMessage string      `json:"detail"`
 }
 
 func NewOpError(code errorSignal, msg string) *OpError {
