@@ -39,7 +39,7 @@ $ cp settings.yaml.example settings.yaml
 2. 如果作为第三方库使用，则可以由用户通过以下方法配置
 ```bash
 func init() {
-	utils.OfficeParserQiniuCfg = &utils.Qiniu{
+	utils.OpQiniu = &bases.CT_Qiniu{
 		//七牛key
 		AccessKey: "key",
 		//七牛secret
