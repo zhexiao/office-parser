@@ -32,4 +32,9 @@ func TestParsePaper(t *testing.T) {
 	if data.WordText == "" {
 		t.Error("试卷文本数据解析失败")
 	}
+
+	_, err = ParsePaper([]byte{})
+	if err == nil {
+		t.Error("读取空字节，应该报错")
+	}
 }
