@@ -71,7 +71,9 @@ func ParseBook(e *CT_Excel) (*CT_Book, error) {
 		contentIdx = 0
 		levelStrArray = nil
 
-		book.BookIndexs = append(book.BookIndexs, bIdx)
+		if bIdx.Name != "" && bIdx.Level != "" {
+			book.BookIndexs = append(book.BookIndexs, bIdx)
+		}
 	}
 
 	return book, nil
