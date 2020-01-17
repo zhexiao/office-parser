@@ -3,3 +3,4 @@ ignore:
   - "controllers.go"
   - "word/number.go"
   - "./bases/constants.go"
+  - "./bases/qiniu.go"
