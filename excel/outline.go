@@ -53,6 +53,8 @@ func ParseOutline(e *CT_Excel) (*CT_Outline, error) {
 		nodeEndCol int
 
 		outAttrs []*CT_OutlineAttr
+
+		rootNode bool
 	)
 
 	//记录每一个level已经有多少个数据了
@@ -135,6 +137,17 @@ func ParseOutline(e *CT_Excel) (*CT_Outline, error) {
 					name := bases.ReadText(v)
 
 					if len(numArr) > 0 && name != "" {
+						//只允许一个根节点
+						if rootNode == false {
+							if m == 0 {
+								rootNode = true
+							}
+						} else {
+							if m == 0 {
+								return nil, bases.NewOpError(bases.NormalError, "找到多个根节点")
+							}
+						}
+
 						num := numArr[0]
 
 						//num转大写
