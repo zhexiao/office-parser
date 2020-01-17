@@ -348,6 +348,8 @@ func (w *CT_Word) getParagraphData(paragraph document.Paragraph) string {
 			//检查文本样式
 			//parser_underline_wave 波浪线
 			//parser_underline_wavyDouble 双波浪线
+			//parser_underline_double 双下划线
+			//parser_underline_single 下划线
 			//parser_em_zhuozhong	着重符
 			if run.X().RPr != nil {
 				//删除线
@@ -368,17 +370,14 @@ func (w *CT_Word) getParagraphData(paragraph document.Paragraph) string {
 				//下划线、波浪线
 				if run.X().RPr.U != nil {
 					uVal := run.X().RPr.U.ValAttr.String()
-
-					switch uVal {
-					case "single":
-						//下划线
-						text = fmt.Sprintf("<span style='border-bottom:1px solid black;'>%s</span>", text)
-					case "double":
-						//双下划线
-						text = fmt.Sprintf("<span style='border-bottom:3px double black;'>%s</span>", text)
-					default:
-						text = fmt.Sprintf("<span class='parser_underline_%s'>%s</span>", run.X().RPr.U.ValAttr.String(), text)
-					}
+					text = fmt.Sprintf("<span class='parser_underline_%s'>%s</span>", uVal, text)
+					//switch uVal {
+					//case "single":
+					//	//下划线
+					//	text = fmt.Sprintf("<span style='border-bottom:1px solid black;'>%s</span>", text)
+					//default:
+					//	text = fmt.Sprintf("<span class='parser_underline_%s'>%s</span>", run.X().RPr.U.ValAttr.String(), text)
+					//}
 				}
 
 				//斜体
