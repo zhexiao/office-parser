@@ -4,3 +4,4 @@ ignore:
   - "word/number.go"
   - "./bases/constants.go"
   - "./bases/qiniu.go"
+  - "./bases/wmf.go"
