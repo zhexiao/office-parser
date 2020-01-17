@@ -58,16 +58,16 @@ func (e *CT_Excel) getSheetData(n int) error {
 	sheet := sheets[n]
 
 	//读取行列数
-	rowStart, colStart, rowEnd, colEnd := sheet.ExtentsIndex()
-	rowStartInt := []byte(rowStart)[0]
-	rowEndInt := []byte(rowEnd)[0]
+	colStart, rowStart, colEnd, rowEnd := sheet.ExtentsIndex()
+	colStartInt := []byte(colStart)[0]
+	colEndInt := []byte(colEnd)[0]
 
 	//读取每一行的数据
-	for i := colStart; i <= colEnd; i++ {
+	for i := rowStart; i <= rowEnd; i++ {
 		rowData := NewCT_RowData()
 
 		//读取每个单元的数据
-		for n := rowStartInt; n <= rowEndInt; n++ {
+		for n := colStartInt; n <= colEndInt; n++ {
 			cellRef := fmt.Sprintf("%s%s", string([]byte{n}), strconv.Itoa(int(i)))
 			val := sheet.Cell(cellRef).GetString()
 

@@ -33,6 +33,9 @@ func ParseCognitionSp(e *CT_Excel) ([]*CT_CognitionSp, error) {
 		faculty    int
 		subject    int
 		spType     int
+
+		//只允许存在一个根节点
+		rootNode bool
 	)
 
 	//记录每一个level已经有多少个数据了
@@ -89,10 +92,22 @@ func ParseCognitionSp(e *CT_Excel) ([]*CT_CognitionSp, error) {
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
+
 					num := strings.Join(bases.ReadNum(v), ",")
 					name := bases.ReadText(v)
 
 					if num != "" && name != "" {
+						//只允许一个根节点
+						if rootNode == false {
+							if m == 0 {
+								rootNode = true
+							}
+						} else {
+							if m == 0 {
+								return nil, bases.NewOpError(bases.NormalError, "找到多个根节点")
+							}
+						}
+
 						//num转大写
 						num = strings.ToUpper(num)
 
