@@ -7,6 +7,8 @@ import (
 
 var cognitionMapTestFile = "../_testdata/cognition_map_test.xlsx"
 var cognitionMapTestFile1 = "../_testdata/cognition_map_test_multiple_root.xlsx"
+var cognitionMapTestFile2 = "../_testdata/cognition_map_test_missing_faculty.xlsx"
+var cognitionMapTestFile3 = "../_testdata/cognition_map_test_missing_subject.xlsx"
 
 func TestNewCT_CognitionMap(t *testing.T) {
 	var b interface{}
@@ -67,7 +69,55 @@ func TestParseCognitionMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(data) != 7 {
+	if len(data) != 8 {
 		t.Error("数据解析有错误")
+	}
+}
+
+func TestParseCognitionMapMissingSubject(t *testing.T) {
+	e := NewCT_Excel()
+
+	fileBytes, err := ioutil.ReadFile(cognitionMapTestFile3)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = e.read(fileBytes)
+	if err != nil {
+		t.Error(err)
+	}
+
+	excel, err := e.GetExcelData()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = ParseCognitionMap(excel)
+	if err == nil {
+		t.Error("缺少学科，应该报错")
+	}
+}
+
+func TestParseCognitionMapMissingFaculty(t *testing.T) {
+	e := NewCT_Excel()
+
+	fileBytes, err := ioutil.ReadFile(cognitionMapTestFile2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = e.read(fileBytes)
+	if err != nil {
+		t.Error(err)
+	}
+
+	excel, err := e.GetExcelData()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = ParseCognitionMap(excel)
+	if err == nil {
+		t.Error("缺少学段，应该报错")
 	}
 }

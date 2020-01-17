@@ -150,7 +150,7 @@ func main() {
 func test() {
 	//data, err := word.ConvertFromFile("./test/question-fill-201903011.docx")
 	//data, err := word.ConvertPaperFromFile("./test/ywgs.docx")
-	data, err := excel.ConvertFromFile("./_testdata/outline.xlsx", "outline")
+	data, err := excel.ConvertFromFile("./_testdata/cognition_map_test.xlsx", "cognition_map")
 	if err != nil {
 		log.Panicf("失败: %s", err)
 	}

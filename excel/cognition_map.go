@@ -88,11 +88,11 @@ func ParseCognitionMap(e *CT_Excel) ([]*CT_CognitionMap, error) {
 					if num != "" && name != "" {
 						if rootNode == false {
 							//设置根节点已找到
-							if m == 1 {
+							if m == 0 {
 								rootNode = true
 							}
 						} else {
-							if m == 1 {
+							if m == 0 {
 								return nil, bases.NewOpError(bases.NormalError, "存在多个根目录")
 							}
 						}
