@@ -30,6 +30,9 @@ func ParseCognitionMap(e *CT_Excel) ([]*CT_CognitionMap, error) {
 		nodeEndCol int
 		faculty    int
 		subject    int
+
+		//检查是否出现过根节点，一个知识点只允许出现一个根节点
+		rootNode bool
 	)
 
 	//记录每一个level已经有多少个数据了
@@ -78,10 +81,22 @@ func ParseCognitionMap(e *CT_Excel) ([]*CT_CognitionMap, error) {
 
 			for m, v := range row.Content {
 				if m <= nodeEndCol {
+
 					num := strings.Join(bases.ReadNum(v), ",")
 					name := bases.ReadText(v)
 
 					if num != "" && name != "" {
+						if rootNode == false {
+							//设置根节点已找到
+							if m == 1 {
+								rootNode = true
+							}
+						} else {
+							if m == 1 {
+								return nil, bases.NewOpError(bases.NormalError, "存在多个根目录")
+							}
+						}
+
 						//num转大写
 						num = strings.ToUpper(num)
 
