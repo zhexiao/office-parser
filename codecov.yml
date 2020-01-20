@@ -1,7 +1,10 @@
 ignore:
   - "main.go"
   - "controllers.go"
-  - "word/number.go"
+  - "./word/number.go"
+  - "./word/word.go"
+  - "./word/question.go"
+  - "./word/paper.go"
   - "./bases/constants.go"
   - "./bases/qiniu.go"
   - "./bases/wmf.go"
