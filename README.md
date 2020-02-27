@@ -30,13 +30,16 @@ $ go run main.go -t word -f ./test/ywgs.docx
 $ go run main.go -t book -f ./test/book.xlsx 
 ```
 
-# 配置文件
-1. 如果独立使用，则可以创建settings.yaml自定义配置
+# 独立使用
+如果独立使用，则可以创建settings.yaml自定义配置：
+
 ```
 $ cp settings.yaml.example settings.yaml
 ```
 
-2. 如果作为第三方库使用，则可以由用户通过以下方法配置
+# 第三方库使用
+如果作为第三方库使用，则可以由用户在main.go文件通过以下方法配置：
+
 ```bash
 func init() {
 	utils.OpQiniu = &bases.CT_Qiniu{
