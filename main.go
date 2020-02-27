@@ -67,7 +67,7 @@ func init() {
 		}
 
 		//初始化WMF的配置
-		bases.WmfConfiguration = &bases.CT_WmfCfg{
+		bases.OpWmf = &bases.CT_WmfCfg{
 			Uri: yamlSettings.Wmf.Uri,
 		}
 	}

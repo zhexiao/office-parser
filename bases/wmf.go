@@ -17,11 +17,11 @@ func New_CT_WmfCfg() *CT_WmfCfg {
 	return &CT_WmfCfg{}
 }
 
-var WmfConfiguration *CT_WmfCfg
+var OpWmf *CT_WmfCfg
 
 func checkWmfCfg() error {
-	if WmfConfiguration == nil {
-		return NewOpError(NormalError, "没有实例化office-parser的wmf配置，无法进行wmf图片转换，请检查`WmfConfiguration`变量")
+	if OpWmf == nil {
+		return NewOpError(NormalError, "没有实例化office-parser的wmf配置，无法进行wmf图片转换，请检查`OpWmf`变量")
 	}
 
 	return nil
@@ -70,5 +70,5 @@ func (w *CT_WmfCfg) convert(filepath string, imageName string) error {
 }
 
 func WmfConvert(filepath string, imageName string) error {
-	return WmfConfiguration.convert(filepath, imageName)
+	return OpWmf.convert(filepath, imageName)
 }

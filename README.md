@@ -55,7 +55,7 @@ func init() {
 	}
 
 	//初始化WMF的配置
-	utils.WmfConfiguration = &utils.CT_WmfCfg{
+	utils.OpWmf = &utils.CT_WmfCfg{
 		Uri: "http://127.0.0.1:10002/convert",
 	}
 }
