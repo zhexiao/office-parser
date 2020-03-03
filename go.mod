@@ -3,7 +3,7 @@ module github.com/zhexiao/office-parser
 go 1.13
 
 require (
-	gitee.com/zhexiao/unioffice v0.0.0-20191105084552-b5952c649176
+	gitee.com/zhexiao/unioffice v0.0.0-20200303072136-5f9f85f6caac
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/qiniu/api.v7 v7.2.5+incompatible
 	github.com/qiniu/x v7.0.8+incompatible // indirect

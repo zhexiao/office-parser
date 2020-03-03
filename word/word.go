@@ -165,8 +165,10 @@ func (w *CT_Word) parseImage() {
 			word.images.Store(image.RelID(), uri)
 		}(w, img)
 	}
-
 	wg.Wait()
+
+	//fmt.Println(w.doc.Images)
+	//fmt.Println(w.images)
 }
 
 //执行自动序号数据读取
@@ -177,11 +179,18 @@ func (w *CT_Word) parseOrder() {
 			abData := &CT_AbNumData{}
 			abData.numId = df.AbstractNumberID()
 			for _, lv := range df.X().Lvl {
+
+				//todo 有些start为nil？
+				start := int64(1)
+				if lv.Start != nil {
+					start = lv.Start.ValAttr
+				}
+
 				abData.iLvl = append(abData.iLvl, &CT_AbNumILvl{
 					ilvl:   lv.IlvlAttr,
 					numFmt: lv.NumFmt.ValAttr.String(),
 					text:   *lv.LvlText.ValAttr,
-					start:  lv.Start.ValAttr,
+					start:  start,
 				})
 			}
 
@@ -312,10 +321,13 @@ func (w *CT_Word) getParagraphData(paragraph document.Paragraph) string {
 		//段落下面的每个单元文本数据
 		var text string
 
-		if run.DrawingInline() != nil {
+		if len(run.DrawingAnchored()) > 0 {
+			//图片数据
+			text = w.readAnchoredImage(run.DrawingAnchored())
+		} else if len(run.DrawingInline()) > 0 {
 			//图片数据
 			text = w.readImage(run.DrawingInline())
-		} else if run.OleObjects() != nil {
+		} else if len(run.OleObjects()) > 0 {
 			//公式数据
 			text = w.readOles(run.OleObjects())
 		} else if len(run.Ruby().Rt) > 0 && len(run.Ruby().RubyBase) > 0 {
@@ -420,6 +432,18 @@ func (w *CT_Word) getParagraphData(paragraph document.Paragraph) string {
 
 //读取图片数据
 func (w *CT_Word) readImage(images []document.InlineDrawing) string {
+	var imageUri string
+	for _, di := range images {
+		imf, _ := di.GetImage()
+		uri, _ := w.images.Load(imf.RelID())
+
+		imageUri = fmt.Sprintf("<img src='%s' style='width:%s;height:%s'/>", uri, di.X().Extent.Size().Width, di.X().Extent.Size().Height)
+	}
+
+	return imageUri
+}
+
+func (w *CT_Word) readAnchoredImage(images []document.AnchoredDrawing) string {
 	var imageUri string
 	for _, di := range images {
 		imf, _ := di.GetImage()
